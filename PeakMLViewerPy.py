@@ -3,7 +3,7 @@ from Data.DataAccess import DataAccess
 import Logger as lg
 
 def main():
-    
+
     try:
 
         #Initialize logging session by creating log file.

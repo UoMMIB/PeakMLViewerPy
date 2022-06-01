@@ -15,6 +15,9 @@ class PeakSplitDialog(ViewerDialog):
         self.rt = rt
         self.rt_sec = 0
         self.rt_min = 0
+        self.group_split = 0
+        self.group_split_variable = 0
+
 
         self.df = df
 
@@ -22,7 +25,7 @@ class PeakSplitDialog(ViewerDialog):
             rt_split = rt.split(":")
             self.rt_sec = rt_split[1]
             self.rt_min = rt_split[0]
-            
+
         self.retention_time_sec = None
         self.retention_time_min = None
         self.submit = False
@@ -68,7 +71,12 @@ class PeakSplitDialog(ViewerDialog):
         canvas.get_tk_widget().pack(side="top", fill ='both', expand=True)
         canvas.draw()
 
+
+
     def buttonbox(self):
+        self.group_split_variable = tk.IntVar()
+        self.checkbox = tk.Checkbutton(self, text = "Split all members of the cluster",variable=self.group_split_variable)
+        self.checkbox.pack(side="left", padx=(5,10), pady=(5,10))
         self.btn_cancel = tk.Button(self, text='Cancel', width=5, command=self.cancel_btn_clicked)
         self.btn_cancel.pack(side="right", padx=(5,10), pady=(5,10))
         self.btn_ok = tk.Button(self, text='OK', width=5, command=self.ok_btn_clicked)
@@ -79,6 +87,7 @@ class PeakSplitDialog(ViewerDialog):
     def ok_btn_clicked(self):
         self.retention_time_sec = self.val_sec.get()
         self.retention_time_min = self.val_min.get()
+        self.group_split = self.group_split_variable.get()
         self.submit = True
         self.destroy()
 
@@ -99,7 +108,7 @@ class PeakSplitDialog(ViewerDialog):
         self._axes.axvline(self._datetime_x)
         self._axes.set_xlabel("Retention Time")
         self._axes.set_ylabel("Intensity")
-        self._axes.xaxis.set_major_formatter(DateFormatter("%M:%S"))    
+        self._axes.xaxis.set_major_formatter(DateFormatter("%M:%S"))
 
         self._figure.canvas.draw()
 
@@ -111,7 +120,7 @@ class PeakSplitDialog(ViewerDialog):
 
         # On click within range of plot
         if event.button == 1 and event.inaxes in [self._axes]:
-            
+
             self._update_set_datetime(mdates.num2date(event.xdata))
             self._update_retention_time()
             self._update_plot()

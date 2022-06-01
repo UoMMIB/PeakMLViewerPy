@@ -12,7 +12,9 @@ class Filter(Enum):
 
 class Plot(Enum):
     Peak = 1
-    DerivativesAll = 2 
+    DerivativesAll = 2
     DerivativesLog = 3
     IntensityPatternAll = 4
     IntensityPatternTrend = 5
+    FragmentationConsensus = 6
+    FragmentationSample = 7

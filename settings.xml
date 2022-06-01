@@ -22,5 +22,15 @@
 			<database>trypanocyc.xml</database>
 			<database>009_kegg.xml</database>
 		</databases>
+		<fragDatabasesType1>
+			<fragDatabase>IPA_MS1.csv</fragDatabase>
+		</fragDatabasesType1>
+		<fragDatabasesType2>
+			<fragDatabase>IPA_MS2_full_0.csv</fragDatabase>
+			<fragDatabase>IPA_MS2_full_1.csv</fragDatabase>
+			<fragDatabase>IPA_MS2_full_2.csv</fragDatabase>
+			<fragDatabase>IPA_MS2_full_3.csv</fragDatabase>
+			<fragDatabase>IPA_MS2_full_4.csv</fragDatabase>
+		</fragDatabasesType2>
 	</settings>
 </peakmlviewer>

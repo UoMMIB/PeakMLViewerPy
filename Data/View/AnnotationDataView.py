@@ -12,11 +12,10 @@ class AnnotationDataView(BaseDataView):
 
     def load_data_for_selected_peak(self, peak: Peak):
         self.clear_datalist()
-        
         try:
             for annotation in peak.annotations:
                 self.add_item(annotation.label, annotation.value)
-            self.refresh_dataframe()   
+            self.refresh_dataframe()
         except Exception as err:
             lg.log_error(f'Unable to load annotation data: {err}')
 
@@ -38,7 +37,3 @@ class AnnotationDataView(BaseDataView):
                                                         "Selected": item.selected,
                                                         "Checked": item.checked,
                                                     }, ignore_index=True)
-
-
-
-

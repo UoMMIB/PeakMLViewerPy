@@ -6,20 +6,43 @@ from Data.View.IdentificationItem import IdentificationItem
 
 class IdentificationDataView(BaseDataView):
     def __init__(self):
-        super().__init__(['ID','Formula','PPM','Adduct','Name','Class','Description','Prior','Post','Smiles','InChi','Notes'])
+        super().__init__(['ID','Formula','PPM','Adduct','Name','Class','Description','Prior','Post','Smiles','InChi','Notes','IPA_id','IPA_name','IPA_formula','IPA_adduct','IPA_mz','IPA_charge','IPA_ppm','IPA_isotope_pattern_score','IPA_fragmentation_pattern_score','IPA_prior','IPA_post','IPA_post_Gibbs','IPA_post_chi_square_pval'])
 
     def load_data_for_selected_peak(self, peak, molecule_database):
+
         try:
+
             self.clear_datalist()
+
 
             iden_ids = []
             iden_ppms = []
             iden_adducts = []
             iden_priors = []
             iden_posts = []
+            iden_IPA_id = []
+            iden_IPA_name = []
+            iden_IPA_formula = []
+            iden_IPA_adduct = []
+            iden_IPA_mz = []
+            iden_IPA_charge = []
+            iden_IPA_ppm = []
+            iden_IPA_isotope_pattern_score = []
+            iden_IPA_fragmentation_pattern_score = []
+            iden_IPA_prior = []
+            iden_IPA_post = []
+            iden_IPA_post_Gibbs = []
+            iden_IPA_post_chi_square_pval = []
+
 
             # Get peak identification of label 'identification', value is multiple ids
             iden_ann = peak.get_specific_annotation('identification')
+
+            if iden_ann:
+                print("iden_ann")
+            else:
+                print("no iden_ann")
+
             if iden_ann:
 
                 # Get list of PPM values from annotation
@@ -47,8 +70,79 @@ class IdentificationDataView(BaseDataView):
                 if iden_notes:
                     iden_notes = iden_notes.value.split(', ')
 
+                # Get list of IPA_id values from annotation
+                iden_IPA_id = peak.get_specific_annotation('IPA_id')
+                if iden_IPA_id:
+                    iden_IPA_id = iden_IPA_id.value.split(', ')
+
+                # Get list of IPA_name values from annotation
+                iden_IPA_name = peak.get_specific_annotation('IPA_name')
+                if iden_IPA_name:
+                    iden_IPA_name = iden_IPA_name.value.split(', ')
+
+                # Get list of IPA_formula values from annotation
+                iden_IPA_formula = peak.get_specific_annotation('IPA_formula')
+                if iden_IPA_formula:
+                    iden_IPA_formula = iden_IPA_formula.value.split(', ')
+
+                # Get list of IPA_adduct values from annotation
+                iden_IPA_adduct = peak.get_specific_annotation('IPA_adduct')
+                if iden_IPA_adduct:
+                    iden_IPA_adduct = iden_IPA_adduct.value.split(', ')
+
+                # Get list of IPA_mz values from annotation
+                iden_IPA_mz = peak.get_specific_annotation('IPA_mz')
+                if iden_IPA_mz:
+                    iden_IPA_mz = iden_IPA_mz.value.split(', ')
+
+                # Get list of IPA_charge values from annotation
+                iden_IPA_charge = peak.get_specific_annotation('IPA_charge')
+                if iden_IPA_charge:
+                    iden_IPA_charge = iden_IPA_charge.value.split(', ')
+
+                # Get list of IPA_ppm values from annotation
+                iden_IPA_ppm = peak.get_specific_annotation('IPA_ppm')
+                if iden_IPA_ppm:
+                    iden_IPA_ppm = iden_IPA_ppm.value.split(', ')
+
+                # Get list of IPA_isotope_pattern_score values from annotation
+                iden_IPA_isotope_pattern_score = peak.get_specific_annotation('IPA_isotope_pattern_score')
+                if iden_IPA_isotope_pattern_score:
+                    iden_IPA_isotope_pattern_score = iden_IPA_isotope_pattern_score.value.split(', ')
+
+                # Get list of IPA_fragmentation_pattern_score values from annotation
+                iden_IPA_fragmentation_pattern_score = peak.get_specific_annotation('IPA_fragmentation_pattern_score')
+                if iden_IPA_fragmentation_pattern_score:
+                    iden_IPA_fragmentation_pattern_score = iden_IPA_fragmentation_pattern_score.value.split(', ')
+
+                # Get list of IPA_prior values from annotation
+                iden_IPA_prior = peak.get_specific_annotation('IPA_prior')
+                if iden_IPA_prior:
+                    iden_IPA_prior = iden_IPA_prior.value.split(', ')
+
+                # Get list of IPA_post values from annotation
+                iden_IPA_post = peak.get_specific_annotation('IPA_post')
+                if iden_IPA_post:
+                    iden_IPA_post = iden_IPA_post.value.split(', ')
+
+                # Get list of IPA_post_Gibbs values from annotation
+                iden_IPA_post_Gibbs = peak.get_specific_annotation('IPA_post_Gibbs')
+                if iden_IPA_post_Gibbs:
+                    iden_IPA_post_Gibbs = iden_IPA_post_Gibbs.value.split(', ')
+
+                # Get list of IPA_post_chi_square_pval values from annotation
+                iden_IPA_post_chi_square_pval = peak.get_specific_annotation('IPA_post_chi_square_pval')
+                if iden_IPA_post_chi_square_pval:
+                    iden_IPA_post_chi_square_pval = iden_IPA_post_chi_square_pval.value.split(', ')
+
                 iden_ids = iden_ann.value.split(', ')
                 iden_count = len(iden_ids)
+
+                if iden_IPA_id:
+                    if len(iden_IPA_id) > iden_count:
+                        iden_count = len(iden_IPA_id)
+
+
 
                 lg.log_progress(f'{iden_count} identities found.')
 
@@ -64,13 +158,46 @@ class IdentificationDataView(BaseDataView):
                     smiles = ""
                     inchi = ""
                     notes = ""
+                    IPA_id = ""
+                    IPA_name = ""
+                    IPA_formula = ""
+                    IPA_adduct = ""
+                    IPA_mz = ""
+                    IPA_charge = ""
+                    IPA_ppm = ""
+                    IPA_isotope_pattern_score = ""
+                    IPA_fragmentation_pattern_score = ""
+                    IPA_prior = ""
+                    IPA_post = ""
+                    IPA_post_Gibbs = ""
+                    IPA_post_chi_square_pval = ""
 
-                    id = iden_ids[i]
+
+                    #id
+                    if iden_ids and len(iden_ids) > 0:
+                        if i < len(iden_ids):
+                            id = iden_ids[i]
+                        else:
+                            id = ""
+
+                    if iden_IPA_id and len(iden_IPA_id) > 0:
+                        if i < len(iden_IPA_id):
+                            IPA_id = iden_IPA_id[i]
+                        else:
+                            IPA_id = ""
+
+
 
                     if molecule_database.get(id,False):
                         molecule = molecule_database[id]
                     else:
                         molecule = None
+
+                    if molecule_database.get(IPA_id,False):
+                        IPA_mol = molecule_database[IPA_id]
+                    else:
+                        IPA_mol = None
+
 
                     # Populate details from molecule database.
                     if molecule is not None:
@@ -88,6 +215,13 @@ class IdentificationDataView(BaseDataView):
                         smiles = ""
                         inchi = ""
 
+                    if IPA_mol is not None:
+                        IPA_smiles = IPA_mol.smiles
+                        IPA_inchi = IPA_mol.inchi
+                    else:
+                        IPA_smiles = ""
+                        IPA_inchi = ""
+
                     if iden_ppms and len(iden_ppms) > 0:
                         if len(iden_ppms) == 1:
                             ppm = u.convert_float_to_sf(iden_ppms[0])
@@ -103,41 +237,123 @@ class IdentificationDataView(BaseDataView):
                     if iden_priors and len(iden_priors) > 0:
                         if i < len(iden_priors):
                             prior = u.to_float(iden_priors[i])
+                        else:
+                            prior = ""
 
                     if iden_posts and len(iden_posts) > 0:
                         if i < len(iden_posts):
                             post = u.to_float(iden_posts[i])
+                        else:
+                            post = ""
 
                     if iden_notes and len(iden_notes) > 0:
                         if i < len(iden_notes):
                             notes = iden_notes[i]
+                        else:
+                            notes = ""
 
-                    self.add_item(id, formula, ppm, adduct, name, class_desc, description, prior, post, smiles, inchi, notes)
+                    if iden_IPA_name and len(iden_IPA_name) > 0:
+                        if i < len(iden_IPA_name):
+                            IPA_name = iden_IPA_name[i]
+                        else:
+                            IPA_name = ""
 
+                    if iden_IPA_formula and len(iden_IPA_formula) > 0:
+                        if i < len(iden_IPA_formula):
+                            IPA_formula = iden_IPA_formula[i]
+                        else:
+                            IPA_formula = ""
+
+                    if iden_IPA_adduct and len(iden_IPA_adduct) > 0:
+                        if i < len(iden_IPA_adduct):
+                            IPA_adduct = iden_IPA_adduct[i]
+                        else:
+                            IPA_adduct = ""
+
+                    if iden_IPA_mz and len(iden_IPA_mz) > 0:
+                        if i < len(iden_IPA_mz):
+                            IPA_mz = iden_IPA_mz[i]
+                        else:
+                            IPA_mz = ""
+
+                    if iden_IPA_charge and len(iden_IPA_charge) > 0:
+                        if i < len(iden_IPA_charge):
+                            IPA_charge = iden_IPA_charge[i]
+                        else:
+                            IPA_charge = ""
+
+                    if iden_IPA_ppm and len(iden_IPA_ppm) > 0:
+                        if i < len(iden_IPA_ppm):
+                            IPA_ppm = iden_IPA_ppm[i]
+                        else:
+                            IPA_ppm = ""
+
+                    if iden_IPA_isotope_pattern_score and len(iden_IPA_isotope_pattern_score) > 0:
+                        if i < len(iden_IPA_isotope_pattern_score):
+                            IPA_isotope_pattern_score = iden_IPA_isotope_pattern_score[i]
+                        else:
+                            IPA_isotope_pattern_score = ""
+
+                    if iden_IPA_fragmentation_pattern_score and len(iden_IPA_fragmentation_pattern_score) > 0:
+                        if i < len(iden_IPA_fragmentation_pattern_score):
+                            IPA_fragmentation_pattern_score = iden_IPA_fragmentation_pattern_score[i]
+                        else:
+                            IPA_fragmentation_pattern_score = ""
+
+                    if iden_IPA_prior and len(iden_IPA_prior) > 0:
+                        if i < len(iden_IPA_prior):
+                            IPA_prior = iden_IPA_prior[i]
+                        else:
+                            IPA_prior = ""
+
+                    if iden_IPA_post and len(iden_IPA_post) > 0:
+                        if i < len(iden_IPA_post):
+                            IPA_post = iden_IPA_post[i]
+                        else:
+                            IPA_post = ""
+
+                    if iden_IPA_post_Gibbs and len(iden_IPA_post_Gibbs) > 0:
+                        if i < len(iden_IPA_post_Gibbs):
+                            IPA_post_Gibbs = iden_IPA_post_Gibbs[i]
+                        else:
+                            IPA_post_Gibbs = ""
+
+                    if iden_IPA_post_chi_square_pval and len(iden_IPA_post_chi_square_pval) > 0:
+                        if i < len(iden_IPA_post_chi_square_pval):
+                            IPA_post_chi_square_pval = iden_IPA_post_chi_square_pval[i]
+                        else:
+                            IPA_post_chi_square_pval = ""
+
+                    self.add_item(id, formula, ppm, adduct, name, class_desc, description, prior, post, smiles, inchi, notes, IPA_id, IPA_name, IPA_formula, IPA_adduct, IPA_mz, IPA_charge, IPA_ppm, IPA_isotope_pattern_score, IPA_fragmentation_pattern_score, IPA_prior, IPA_post, IPA_post_Gibbs, IPA_post_chi_square_pval, IPA_smiles, IPA_inchi)
             else:
                 lg.log_progress(f'No "identification" annotation found.')
 
             self.sort_datalist_by_probabilities()
-
             # Reload dataframe after all added.
             self.refresh_dataframe()
 
         except Exception as err:
             lg.log_error(f'Unable to load identification data from peakML object: {err}')
 
-    def add_item(self, id: int, formula: str, ppm: float, adduct: str, name: str, class_desc: str, description: str, prior: float, post: float, smiles: str, inchi: str, notes: str):
-        self.datalist.append(IdentificationItem(id, formula, ppm, adduct, name, class_desc, description, prior, post, smiles, inchi, notes))
+
+
+
+    def add_item(self, id: int, formula: str, ppm: float, adduct: str, name: str, class_desc: str, description: str, prior: float, post: float, smiles: str, inchi: str, notes: str, IPA_id: str, IPA_name: str, IPA_formula: str, IPA_adduct: str, IPA_mz: str, IPA_charge: str, IPA_ppm: str, IPA_isotope_pattern_score: str, IPA_fragmentation_pattern_score: str, IPA_prior: str, IPA_post: str, IPA_post_Gibbs: str, IPA_post_chi_square_pval: str, IPA_smiles: str, IPA_inchi: str):
+        self.datalist.append(IdentificationItem(id, formula, ppm, adduct, name, class_desc, description, prior, post, smiles, inchi, notes, IPA_id, IPA_name, IPA_formula, IPA_adduct, IPA_mz, IPA_charge, IPA_ppm, IPA_isotope_pattern_score, IPA_fragmentation_pattern_score, IPA_prior, IPA_post, IPA_post_Gibbs, IPA_post_chi_square_pval, IPA_smiles, IPA_inchi))
+
+
 
     def sort_datalist_by_probabilities(self):
         if len(self.datalist) > 0:
             # If the identifications have posterior values then
             if self.datalist[0].post != "":
-        
+
                 self.datalist.sort(key=lambda x: x.prior, reverse=True)
                 self.datalist.sort(key=lambda x: x.post, reverse=True)
 
     def refresh_dataframe(self):
         self.clear_dataframe()
+        #print(len(self.datalist))
 
         if len(self.datalist) > 0:
             for item in self.datalist:
@@ -150,20 +366,33 @@ class IdentificationDataView(BaseDataView):
                                                         "Name": item.name,
                                                         "Class": item.class_desc,
                                                         "Description": item.description,
-                                                        "Prior": round(item.prior,2) if item.prior is not None and item.prior != "" else "",
-                                                        "Post": round(item.post,2) if item.post is not None and item.post != "" else "",
+                                                        "Prior": round(item.prior,2) if item.prior is not None and item.prior != "" and item.prior != "None" else "",
+                                                        "Post": round(item.post,2) if item.post is not None and item.post != "" and item.post != "None" else "",
                                                         "Smiles": item.smiles,
                                                         "InChi": item.inchi,
                                                         "Notes": item.notes,
+                                                        "IPA_id": item.IPA_id,
+                                                        "IPA_name": item.IPA_name,
+                                                        "IPA_formula": item.IPA_formula,
+                                                        "IPA_adduct": item.IPA_adduct,
+                                                        "IPA_mz": round(float(item.IPA_mz),3) if item.IPA_mz is not None and item.IPA_mz != "" and item.IPA_mz != "None" else "",
+                                                        "IPA_charge": item.IPA_charge,
+                                                        "IPA_ppm": round(float(item.IPA_ppm),3) if item.IPA_ppm is not None and item.IPA_ppm != "" and item.IPA_ppm != "None" else "",
+                                                        "IPA_isotope_pattern_score": round(float(item.IPA_isotope_pattern_score),5) if item.IPA_isotope_pattern_score is not None and item.IPA_isotope_pattern_score != "" and item.IPA_isotope_pattern_score != "None" else "",
+                                                        "IPA_fragmentation_pattern_score": round(float(item.IPA_fragmentation_pattern_score),5) if item.IPA_fragmentation_pattern_score is not None and item.IPA_fragmentation_pattern_score != "" and item.IPA_fragmentation_pattern_score != "None" else "",
+                                                        "IPA_prior": round(float(item.IPA_prior),3) if item.IPA_prior is not None and item.IPA_prior != "" and item.IPA_prior != "None" else "",
+                                                        "IPA_post": round(float(item.IPA_post),3) if item.IPA_post is not None and item.IPA_post != "" and item.IPA_post != "None" else "",
+                                                        "IPA_post_Gibbs": round(float(item.IPA_post_Gibbs),3) if item.IPA_post_Gibbs is not None and item.IPA_post_Gibbs != "" and item.IPA_post_Gibbs != "None" else "",
+                                                        "IPA_post_chi_square_pval": round(float(item.IPA_post_chi_square_pval),3) if item.IPA_post_chi_square_pval is not None and item.IPA_post_chi_square_pval != "" and item.IPA_post_chi_square_pval != "None" else "",
+                                                        "IPA_smiles": item.IPA_smiles,
+                                                        "IPA_inchi": item.IPA_inchi,
                                                         "Selected": item.selected,
                                                         "Checked": item.checked,
                                                     }, ignore_index=True)
-
             # If no items are selected,
             if len(self.dataframe.loc[self.dataframe["Selected"] == True]) == 0:
                 # set the first one as selected.
                 self.dataframe.at[0, 'Selected'] = True
-
 
 
 
@@ -178,7 +407,7 @@ class IdentificationDataView(BaseDataView):
             prior_val = float(prior)
         else:
             prior_val = None
-        
+
         prior_changed = False
 
         for item in self.datalist:
@@ -198,11 +427,44 @@ class IdentificationDataView(BaseDataView):
 
         return prior_changed
 
-    def remove_checked(self, ipa_imported: bool):
+
+    def remove_checked(self, ipa_imported: bool, IPA: int):
         current_list = self.datalist
         amended_list = []
+
         for item in current_list:
             if item.checked == False:
+                amended_list.append(item)
+            else:
+                if IPA == 0:
+                    item.id = ""
+                    item.formula = ""
+                    item.ppm = ""
+                    item.adduct = ""
+                    item.name = ""
+                    item.class_desc = ""
+                    item.description = ""
+                    item.prior = ""
+                    item.post = ""
+                    item.smiles = ""
+                    item.inchi = ""
+                    item.notes = ""
+                else:
+                    item.IPA_id = ""
+                    item.IPA_name = ""
+                    item.IPA_formula = ""
+                    item.IPA_adduct = ""
+                    item.IPA_mz = ""
+                    item.IPA_charge = ""
+                    item.IPA_ppm = ""
+                    item.IPA_isotope_pattern_score = ""
+                    item.IPA_fragmentation_pattern_score = ""
+                    item.IPA_prior = ""
+                    item.IPA_post = ""
+                    item.IPA_post_Gibbs = ""
+                    item.IPA_post_chi_square_pval = ""
+                    item.IPA_smiles = ""
+                    item.IPA_inchi = ""
                 amended_list.append(item)
 
         self.datalist = amended_list
@@ -280,7 +542,7 @@ class IdentificationDataView(BaseDataView):
                 updated_item_list.append(updated_item)
 
         else:
-            #Update target all other values are adjusting to to account for manually updated. 
+            #Update target all other values are adjusting to to account for manually updated.
             target = 1-updated_value
 
             for item in self.datalist:
@@ -306,6 +568,3 @@ class IdentificationDataView(BaseDataView):
         # If a value has been updated remove from the outstanding calculation.
         # It is possible that all values rather than the added are blank.
         # If an edited value sets it 0 it should be set to 0 probability.
-
-
-

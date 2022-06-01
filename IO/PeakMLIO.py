@@ -26,7 +26,7 @@ import traceback
 #region Reader methods
 
 def showElementValue(tag_name: str, tag_value: str):
-    if tag_value is not None and tag_value.text is not None: 
+    if tag_value is not None and tag_value.text is not None:
         print(tag_name + ": " + tag_value.text)
     else:
         print(tag_name + ": None")
@@ -47,7 +47,6 @@ def add_annotations(parent_element: ET.Element, parent_object: Type[AnnotatableE
         label = annotation_element.find("./label")
         value = annotation_element.find("./value")
         value_type = annotation_element.find("./valuetype")
-
         annotation = Annotation(unit_attribute, ontologyref_attribute, label.text if label.text else "", value.text if value.text else "", value_type.text if value_type.text else "STRING")
         parent_object.add_annotation(annotation)
 
@@ -71,42 +70,42 @@ def add_peaks(parent_element: ET.Element, header_obj: Header, peakset: List[Peak
         sha1sum_element = peak_element.find("./sha1sum")
         signal_element  = peak_element.find("./signal")
 
-        if scan_element is not None:    
+        if scan_element is not None:
             scan = scan_element.text
         else:
             scan = None
-            
-        if retention_time_element is not None:         
+
+        if retention_time_element is not None:
             retention_time = retention_time_element.text
         else:
             retention_time = None
-        
-        if mass_element is not None:     
+
+        if mass_element is not None:
             mass = mass_element.text
         else:
             mass = None
-        
-        if intensity_element is not None: 
+
+        if intensity_element is not None:
             intensity = intensity_element.text
         else:
             intensity = None
-        
-        if measurement_id_element is not None: 
+
+        if measurement_id_element is not None:
             measurement_id = measurement_id_element.text
         else:
             measurement_id = None
 
-        if pattern_id_element is not None: 
+        if pattern_id_element is not None:
             pattern_id = pattern_id_element.text
         else:
             pattern_id = None
-        
-        if sha1sum_element is not None: 
+
+        if sha1sum_element is not None:
             sha1sum = sha1sum_element.text
         else:
             sha1sum = None
 
-        if signal_element is not None: 
+        if signal_element is not None:
             signal = signal_element.text
         else:
             signal = None
@@ -124,37 +123,56 @@ def add_peaks(parent_element: ET.Element, header_obj: Header, peakset: List[Peak
             relative_intensities_element = peak_data_element.find("./relativeintensities")
             pattern_ids_element = peak_data_element.find("./patternids")
             measurement_ids_element = peak_data_element.find("./measurementids")
+            fragment_mass = peak_data_element.find("./fragmentmass")
+            fragment_intensity = peak_data_element.find("./fragmentintensity")
+
 
             peak_data = PeakData(peak_data_type_attribute, peak_data_size_attribute)
 
-            if scanids_element is not None:   
-                scanids_decoded_bytes = base64.b64decode(scanids_element.text) 
+            if scanids_element is not None:
+                scanids_decoded_bytes = base64.b64decode(scanids_element.text)
                 peak_data.scan_ids = np.frombuffer(scanids_decoded_bytes, dtype = "int32")
-                
-            if retention_times_element is not None:      
+
+            if retention_times_element is not None:
                 retention_times_decoded_bytes = base64.b64decode(retention_times_element.text)
                 peak_data.retention_times = np.frombuffer(retention_times_decoded_bytes, dtype = np.float32)
-            
-            if masses_element is not None:     
+
+            if masses_element is not None:
                 masses_decoded_bytes = base64.b64decode(masses_element.text)
                 peak_data.masses = np.frombuffer(masses_decoded_bytes, dtype = np.float32)
-            
-            if intensities_element is not None: 
-                intensities_decoded_bytes = base64.b64decode(intensities_element.text) 
+
+            if intensities_element is not None:
+                intensities_decoded_bytes = base64.b64decode(intensities_element.text)
                 peak_data.intensities = np.frombuffer(intensities_decoded_bytes, dtype = np.float32)
-            
-            if relative_intensities_element is not None: 
-                intensities_decoded_bytes = base64.b64decode(relative_intensities_element.text) 
+
+            if relative_intensities_element is not None:
+                intensities_decoded_bytes = base64.b64decode(relative_intensities_element.text)
                 peak_data.relative_intensities = np.frombuffer(intensities_decoded_bytes, dtype = np.float32)
-            
-            if pattern_ids_element is not None: 
-                pattern_ids_decoded_bytes = base64.b64decode(pattern_ids_element.text) 
+
+            if pattern_ids_element is not None:
+                pattern_ids_decoded_bytes = base64.b64decode(pattern_ids_element.text)
                 peak_data.pattern_ids = np.frombuffer(pattern_ids_decoded_bytes, dtype = "int32")
-            
-            if measurement_ids_element is not None: 
-                measurement_ids_decoded_bytes = base64.b64decode(measurement_ids_element.text) 
+
+            if measurement_ids_element is not None:
+                measurement_ids_decoded_bytes = base64.b64decode(measurement_ids_element.text)
                 peak_data.measurement_ids = np.frombuffer(measurement_ids_decoded_bytes, dtype = "int32")
 
+            if (fragment_mass is not None) and (fragment_intensity is not None) and (fragment_mass.text is not None) and (fragment_intensity.text is not None):
+                fragment_mass_decoded_bytes = base64.b64decode(fragment_mass.text)
+                masses = np.frombuffer(fragment_mass_decoded_bytes, dtype = np.float32)
+
+                fragment_intensity_decoded_bytes = base64.b64decode(fragment_intensity.text)
+                intensities = np.frombuffer(fragment_intensity_decoded_bytes, dtype = np.float32)
+
+                fragments_array = []
+
+                if (len(masses) == len(intensities)) and (len(masses) != 0):
+                    counter = 0
+                    while counter < len(masses):
+                        fragments_array.append(str(masses[counter]) + "," + str(intensities[counter]))
+                        counter += 1
+
+                peak_data.fragments = fragments_array
         else:
             peak_data = None
 
@@ -251,12 +269,12 @@ def import_element_tree_from_peakml_file(tree_data) -> Tuple[Header, Dict[str, P
 
             id = set_element.find("./id")
             type = set_element.find("./type")
-            
+
             measurement_ids_element = set_element.find("./measurementids")
             measurement_ids = []
 
-            if measurement_ids_element is not None: 
-                measurement_ids_decoded_bytes = base64.b64decode(measurement_ids_element.text) 
+            if measurement_ids_element is not None:
+                measurement_ids_decoded_bytes = base64.b64decode(measurement_ids_element.text)
                 measurement_ids = np.frombuffer(measurement_ids_decoded_bytes, dtype = "int32")
 
             set = SetInfo(id.text, type.text, measurement_ids)
@@ -383,7 +401,7 @@ def import_element_tree_from_peakml_file(tree_data) -> Tuple[Header, Dict[str, P
     lg.log_progress(f"Finish reading XML")
 
     return header_obj, peakset_dict, peak_order
-        
+
 #endregion
 
 #region Write methods
@@ -490,10 +508,36 @@ def add_peak_nodes(parent_element: ET.Element, peak_list: List[Peak]):
 
             if peak_obj.peak_data.measurement_ids is not None:
                 measurement_ids = ET.SubElement(peak_data, 'measurementids')
-                measurement_ids.text = peak_obj.peak_data.get_encoded_measurement_ids()             
+                measurement_ids.text = peak_obj.peak_data.get_encoded_measurement_ids()
+
+            if peak_obj.peak_data.fragments is not None:
+                fragmentmass = ET.SubElement(peak_data, 'fragmentmass')
+                fragmentintensity = ET.SubElement(peak_data,'fragmentintensity')
+
+                fragmentmass_array = []
+                fragmentintensity_array = []
+
+                for fragment in peak_obj.peak_data.fragments:
+                    fragment_data = fragment.split(',')
+                    fragmentmass_array.append(float(fragment_data[0]))
+                    fragmentintensity_array.append(float(fragment_data[1]))
+
+                encoded_masses = base64.b64encode(np.array(fragmentmass_array, dtype = "f"))
+                encoded_intensities = base64.b64encode(np.array(fragmentintensity_array, dtype = "f"))
+
+                fragmentmass.text = encoded_masses.decode("UTF-8")
+                fragmentintensity.text = encoded_intensities.decode("UTF-8")
+
+
+                #for fragment_data in peak_obj.peak_data.fragments:
+                    #fragment_element = ET.SubElement(fragments, 'fragment')
+                    #fragment_mass = ET.SubElement(fragment_element, 'mass')
+                    #fragment_mass.text = str(fragment_data[0])
+                    #fragment_intensity = ET.SubElement(fragment_element, 'intensity')
+                    #fragment_intensity.text = str(fragment_data[1])
 
 def create_xml_from_peakml(data_header: Header, data_peaks_list: List[Peak]):
-    
+
     u.trace(f"Start writing XML")
 
     peakml = ET.Element('peakml')
@@ -512,7 +556,7 @@ def create_xml_from_peakml(data_header: Header, data_peaks_list: List[Peak]):
 
     sets = ET.SubElement(header, 'sets')
 
-    for set_obj in data_header.sets: 
+    for set_obj in data_header.sets:
         set = ET.SubElement(sets, 'set')
 
         id = ET.SubElement(set, 'id')
@@ -559,7 +603,7 @@ def create_xml_from_peakml(data_header: Header, data_peaks_list: List[Peak]):
             location.text = file_obj.location
 
     add_annotation_nodes(header, data_header)
-    
+
     # Settings as parameters the peakml xml object and a list of peak data objects
     add_peak_nodes(peakml, data_peaks_list)
 

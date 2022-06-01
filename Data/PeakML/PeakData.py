@@ -15,11 +15,12 @@ class PeakData():
         self._relative_intensities = []
         self._pattern_ids = []
         self._measurement_ids = []
+        self._fragments = []
 
     @property
     def type(self) -> str:
         return self._type
-    
+
     @type.setter
     def type(self, type: str):
         self._type = type
@@ -27,7 +28,7 @@ class PeakData():
     @property
     def size(self) -> int:
         return self._size
-    
+
     @size.setter
     def size(self, size: int):
         self._size = size
@@ -57,6 +58,14 @@ class PeakData():
         self._masses = masses
 
     @property
+    def fragments(self) -> list[str]:
+        return self._fragments
+
+    @fragments.setter
+    def fragments(self, fragments: list[str]):
+        self._fragments = fragments
+
+    @property
     def intensities(self) -> List[float]:
         return self._intensities
 
@@ -75,7 +84,7 @@ class PeakData():
     @property
     def pattern_ids(self) -> List[int]:
         return self._pattern_ids
-    
+
     @pattern_ids.setter
     def pattern_ids(self, pattern_ids: List[int]):
         self._pattern_ids = pattern_ids
@@ -99,7 +108,7 @@ class PeakData():
     def get_encoded_masses(self) -> str:
         encoded = base64.b64encode(self.masses)
         return encoded.decode("UTF-8")  #Converts from bytes to string
-         
+
     def get_encoded_intensities(self) -> str:
         encoded = base64.b64encode(self.intensities)
         return encoded.decode("UTF-8")  #Converts from bytes to string
@@ -116,6 +125,10 @@ class PeakData():
         encoded = base64.b64encode(self.measurement_ids)
         return encoded.decode("UTF-8")  #Converts from bytes to string
 
+    def get_encoded_fragments(self) -> str:
+        encoded = base64.b64encode(self.fragments)
+        return encoded.decode("UTF-8")
+
     def add_scan_id(self, scan_id: str):
         self.scan_ids.append(scan_id)
 
@@ -130,12 +143,15 @@ class PeakData():
 
     def add_relative_intensity(self, relative_intensity: str):
         self.relative_intensities.append(relative_intensity)
-    
+
     def add_pattern_id(self, patternid: str):
         self.pattern_ids.append(patternid)
 
     def add_measurement_id(self, measurement_id: str):
         self.measurement_ids.append(measurement_id)
+
+    def add_fragment(self,fragment:(float,float)):
+        self.fragments.append(fragment)
 
     def get_retention_times_formatted_string(self) -> List[str]:
         rts = list(map(u.format_time_string,self.retention_times))
@@ -152,4 +168,3 @@ class PeakData():
     def get_measurement_ids(self) -> List[str]:
         measurement_ids = list(map(float,self.measurement_ids))
         return measurement_ids  #Converts from bytes to string
-    

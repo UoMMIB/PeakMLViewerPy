@@ -5,6 +5,7 @@ from Data.Settings import Settings
 from Data.View.EntryDataView import EntryDataView
 from Data.View.FilterDataView import FilterDataView
 from Data.View.PlotPeakDataView import PlotPeakDataView
+from Data.View.PlotFragmentationDataView import PlotFragmentationDataView
 from Data.View.PlotDerivativesDataView import PlotDerivativesDataView
 from Data.View.PlotIntensityDataView import PlotIntensityDataView
 from Data.View.SetDataView import SetDataView
@@ -47,7 +48,7 @@ class DataAccess:
     @property
     def filter_view_dataframe(self) -> pd.DataFrame:
         return self._filter_view.dataframe
-    
+
     @property
     def plot_peak_view_dataframe(self) -> pd.DataFrame:
         return self._plot_peak_view.dataframe
@@ -55,15 +56,19 @@ class DataAccess:
     @property
     def plot_der_view_dataframe(self) -> pd.DataFrame:
         return self._plot_der_view.dataframe
-    
+
     @property
     def plot_int_view_dataframe(self) -> pd.DataFrame:
         return self._plot_int_view.dataframe
-    
+
+    @property
+    def plot_frag_view_dataframe(self) -> pd.DataFrame:
+        return self._polt_frag_view.dataframe
+
     @property
     def set_view_dataframe(self) -> pd.DataFrame:
         return self._set_view.dataframe
-    
+
     @property
     def annotation_view_dataframe(self) -> pd.DataFrame:
         return self._annotation_view.dataframe
@@ -141,6 +146,7 @@ class DataAccess:
         # Get first row with selected is true from entry
         df = self.identification_view_dataframe
         selected_df = df.loc[df["Selected"] == True]
+        print(selected_df)
         return selected_df["UID"].values[0]
 
     @selected_identification_uid.setter
@@ -159,7 +165,7 @@ class DataAccess:
     def prior_probabilities_modified(self) -> bool:
         return self._prior_probabilities_modified
 
-    @property 
+    @property
     def peak_split_retention_time(self) -> str:
         return self._peak_split_retention_time
 
@@ -167,13 +173,40 @@ class DataAccess:
     def peak_split_retention_time(self, peak_split_retention_time: str):
         self._peak_split_retention_time = peak_split_retention_time
 
+    @property
+    def group_split_peak(self) -> int:
+        return self._group_split_peak
+
+    @group_split_peak.setter
+    def group_split_peak(self, group_split: int):
+        self._group_split_peak = group_split
+
+    @property
+    def fragment_id_db(self) -> pd.DataFrame:
+        return self._fragment_id_db
+
+    @fragment_id_db.setter
+    def fragment_id_db(self, fragment_id_db: pd.DataFrame):
+        self._fragment_id_db = fragment_id_db
+
+    @property
+    def fragment_id_samples(self) -> pd.DataFrame:
+        return self._fragment_id_samples
+
+    @fragment_id_samples.setter
+    def fragment_id_samples(self, fragment_id_samples: pd.DataFrame):
+        self._fragment_id_samples = fragment_id_samples
+
     def __init__(self):
 
         self._peakml = PeakML()
-        
+
         self._molecule_database = MolIO.load_molecule_databases()
-        self._settings = Settings(SetIO.load_preferences(), SetIO.load_database_paths())
-        
+        #self.import_fragment_databases()
+        self._fragment_id_db, self._fragment_id_samples = MolIO.load_fragment_databases()
+        settings_io = SetIO.load_database_paths()
+        self._settings = Settings(SetIO.load_preferences(), settings_io[0], settings_io[1], settings_io[2])
+
         self._filters = []
         self._measurement_colours = {}
         self._ipa_imported = False
@@ -185,7 +218,8 @@ class DataAccess:
         self._filter_view = FilterDataView()
         self._plot_peak_view = PlotPeakDataView()
         self._plot_der_view = PlotDerivativesDataView()
-        self._plot_int_view = PlotIntensityDataView()    
+        self._plot_int_view = PlotIntensityDataView()
+        self._polt_frag_view = PlotFragmentationDataView()
         self._set_view = SetDataView()
         self._annotation_view = AnnotationDataView()
         self._identification_view = IdentificationDataView()
@@ -222,6 +256,13 @@ class DataAccess:
         except Exception as err:
             lg.log_error(f'An error when importing IPA data: {err}')
 
+    #def import_fragment_databases(self):
+    #    try:
+            self.fragment_id_db, self.fragment_id_samples = MolIO.load_fragment_databases()
+            
+    #    except Exception as err:
+    #        lg.log_error(f'An error when importing IPA data: {err}')
+
     # Load view data from peakml object
     def _load_view_data_from_peakml(self):
 
@@ -241,7 +282,7 @@ class DataAccess:
             p.update_progress("Loading set view data", 30)
             self._set_view.load_data(self._peakml.header, self._measurement_colours)
             lg.log_progress("Set view data loaded.")
-            
+
             self.update_selected_entry()
 
         except Exception as err:
@@ -282,14 +323,21 @@ class DataAccess:
             p.update_progress("Loading intensity plot data", 37)
             self._plot_int_view.load_plot_data_for_selected_peak(selected_peak, self._peakml.header)
             lg.log_progress("Intensity plot data loaded.")
-            
+
             p.update_progress("Loading annotation view data", 42)
+            print(selected_peak)
             self._annotation_view.load_data_for_selected_peak(selected_peak)
             lg.log_progress("Annotation view data loaded.")
 
             p.update_progress("Loading identification view data", 45)
             self._identification_view.load_data_for_selected_peak(selected_peak, self._molecule_database)
             lg.log_progress("Identification view data loaded.")
+
+            p.update_progress("Loading Fragmentation view", 45)
+            self._polt_frag_view.load_plot_data_for_selected_peak(selected_peak, self._peakml.header, self._measurement_colours)
+            lg.log_progress("Fragmentation view data loaded.")
+
+
 
         except Exception as err:
             lg.log_error(f'An error when loading selected entry data: {err}')
@@ -340,13 +388,13 @@ class DataAccess:
     def check_if_any_checked_identifications(self) -> bool:
         return self._identification_view.check_if_any_checked()
 
-    def remove_checked_identifications(self):
-        prior_updated = self._identification_view.remove_checked(self.ipa_imported)
+    def remove_checked_identifications(self,IPA):
+        prior_updated = self._identification_view.remove_checked(self.ipa_imported,IPA)
 
         if prior_updated:
             self._prior_probabilities_modified = True
 
-        #Save updated identification dataframe to selected peak. 
+        #Save updated identification dataframe to selected peak.
         self._update_peak_identifications()
 
     def update_identification_details(self, uid: str, prior: str, notes: str):
@@ -354,14 +402,14 @@ class DataAccess:
 
         if prior_updated:
             self._prior_probabilities_modified = True
-        
-        #Save updated identification dataframe to selected peak. 
+
+        #Save updated identification dataframe to selected peak.
         self._update_peak_identifications()
- 
+
     def _update_peak_identifications(self):
-        #Save updated identification dataframe to selected peak. 
+        #Save updated identification dataframe to selected peak.
         ann_identification, ann_ppm, ann_adduct, ann_prior, ann_post, ann_notes = self._identification_view.get_identification_annotations()
-        
+
         peak = self._peakml.peaks[self.selected_entry_uid]
         peak.update_specific_annotation('identification',ann_identification)
         peak.update_specific_annotation('ppm',ann_ppm)
@@ -369,18 +417,63 @@ class DataAccess:
 
         peak.update_specific_annotation('prior',ann_prior)
         peak.update_specific_annotation('post',ann_post)
-        
+
         peak.update_specific_annotation('notes',ann_notes)
         self._peakml.peaks[self.selected_entry_uid] = peak
 
     def get_set_checked_status(self, label: str) -> bool:
         return self._set_view.get_checked_status_from_label(label)
 
+    def group_split_selected_peak_on_retention_time(self):
+        peak_relation_id =  int(self._peakml.peaks[self.selected_entry_uid].get_specific_annotation("relation.id").value)
+        original = self._peakml.peaks[self.selected_entry_uid]
+        split_check = False
+        new_peaks = {}
+        for key in self._peakml.peaks:
+            if int(self._peakml.peaks[key].get_specific_annotation("relation.id").value) == peak_relation_id:
+
+                self._peakml.peaks[self.selected_entry_uid] = self._peakml.peaks[key]
+
+                try:
+                    peak_lower = self._peakml.peaks[key]
+                    peak_higher = copy.deepcopy(peak_lower)
+
+
+                    peak_lower = self._remove_peak_values_by_retention_time(peak_lower, True)
+
+                    peak_higher = self._remove_peak_values_by_retention_time(peak_higher, False)
+
+                    peak_higher.update_specific_annotation("id", self._get_next_available_peak_id())
+
+                    self._peakml.peaks[self.selected_entry_uid] = peak_lower
+
+                    new_peaks[self.selected_entry_uid] = peak_higher   #adds to dict of new peak as you cannot edit a dictionary that is being used
+
+
+                    split_check = True
+
+                except:
+                    pass
+
+        if split_check == True:
+            for peak in new_peaks:
+                new_higher_uuid = u.get_new_uuid()
+                self._peakml.peaks[new_higher_uuid] = new_peaks[peak]
+
+                peak_lower_index = self._peakml.peak_order.index(peak)
+
+                self._peakml.peak_order.insert(peak_lower_index+1,new_higher_uuid)
+            self._load_view_data_from_peakml()
+        else:
+            lg.log_error(f'An error when splitting peak: {err}')
+            self._peakml.peaks[self.selected_entry_uid] = original
+
+
     def split_selected_peak_on_retention_time(self):
-        
+
         original_peak = self._peakml.peaks[self.selected_entry_uid]
 
-        try: 
+        try:
             # Duplicate peak
             peak_lower = self._peakml.peaks[self.selected_entry_uid]
             peak_higher = copy.deepcopy(peak_lower)
@@ -402,7 +495,7 @@ class DataAccess:
             # Update peak order
             peak_lower_index = self._peakml.peak_order.index(self.selected_entry_uid)
             # Adds to list before set index.
-            self._peakml.peak_order.insert(peak_lower_index+1, new_higher_uuid) 
+            self._peakml.peak_order.insert(peak_lower_index+1, new_higher_uuid)
 
             # Reload data from peakml file
             self._load_view_data_from_peakml()
@@ -411,7 +504,7 @@ class DataAccess:
             lg.log_error(f'An error when splitting peak: {err}')
             # Restore modified peak
             self._peakml.peaks[self.selected_entry_uid] = original_peak
-        
+
     def _get_next_available_peak_id(self):
 
         current_highest_peak_id = 0
@@ -428,8 +521,8 @@ class DataAccess:
         return str(current_highest_peak_id)
 
 
-    def _remove_peak_values_by_retention_time(self, peak: Peak, keep_lower: bool) -> Peak: 
-        
+    def _remove_peak_values_by_retention_time(self, peak: Peak, keep_lower: bool) -> Peak:
+
         rt_split = u.format_time_int(self.peak_split_retention_time)
 
         intensity_values = []
@@ -440,9 +533,9 @@ class DataAccess:
 
         for i in range(len(peak.peaks)):
             child_peak = peak.peaks[i]
-            # Filter retention times 
+            # Filter retention times
             remaining_retention_times = []
-            
+
             original_count = len(child_peak.peak_data.retention_times)
 
             for j in range(len(child_peak.peak_data.retention_times)):
@@ -456,7 +549,7 @@ class DataAccess:
                 else:
                     remaining_retention_times.append(rt_value)
 
-            # Find how many values left, 
+            # Find how many values left,
             remaining_count = len(remaining_retention_times)
 
             if remaining_count:
@@ -496,7 +589,7 @@ class DataAccess:
 
         # Peak is not included if no retention values within the window.
         peak.peaks = updated_peaks
-                    
+
         return peak
 
 #region Filters
@@ -562,7 +655,7 @@ class DataAccess:
         return self._set_view.sets
 
     def _filter_peaks(self, peaks_dic: Dict[str, Peak]):
-    
+
         # Before applying set filters, restore original ordering defined by peakml file.
 
         sorted_peak_dic = {}
@@ -591,12 +684,31 @@ class DataAccess:
 
         return df
 
-    def update_settings(self, decdp: int, defplot: int, databases: List[str]):
+    def get_settings_frag_database_type_1_paths(self)-> str:
+        database_paths = self.settings.get_frag_databases_1_paths()
+        df = pd.DataFrame()
+        for path in database_paths:
+            filename = os.path.split(path)[1]
+            df = df.append({"Name": filename, "Path": path, "Type": "1"}, ignore_index=True)
+
+        return df
+
+    def get_settings_frag_database_type_2_paths(self)-> str:
+        database_paths = self.settings.get_frag_databases_2_paths()
+        df = pd.DataFrame()
+        for path in database_paths:
+            filename = os.path.split(path)[1]
+            df = df.append({"Name": filename, "Path": path, "Type": "2"}, ignore_index=True)
+
+        return df
+
+    def update_settings(self, decdp: int, defplot: int, databases: List[str], frag_databases_type_1: List[str], frag_databases_type_2: List[str]):
 
         self.settings.set_preference_by_name("decdp", decdp)
         self.settings.set_preference_by_name("defplot", defplot)
         self.settings.set_database_paths(databases["Path"].tolist())
+        self.settings.set_frag_databases_1_paths(frag_databases_type_1["Path"].tolist())
+        self.settings.set_frag_databases_2_paths(frag_databases_type_2["Path"].tolist())
         SetIO.write_settings(self.settings)
 
 #endregion
-

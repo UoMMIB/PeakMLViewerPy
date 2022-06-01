@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.dates import DateFormatter
 
+import pandas as pd
+
 from PIL import ImageTk, Image
 from rdkit import Chem
 from rdkit.Chem import Draw
@@ -20,6 +22,7 @@ import numpy as np
 import sys
 import platform
 import subprocess
+import re
 
 from UI.ProgressDialog import ProgressDialog
 from UI.LogDialog import LogDialog
@@ -34,6 +37,9 @@ from UI.SortDialog import SortDialog
 from UI.SortTimeSeriesDialog import SortTimeSeriesDialog
 from UI.PreferencesDialog import PreferencesDialog
 from UI.PeakSplitDialog import PeakSplitDialog
+from Data.PeakML.SampleFragmentsItem import SampleFragmentsItem
+from Data.PeakML.SampleFragmentsItem import ConsensusSpec
+from UI.FragmentComparisonDialog import FragmentComparisonDialog
 import Icon as i
 import Enums as e
 import Utilities as u
@@ -145,6 +151,14 @@ class MainView():
         self._selected_tab_int = selected_tab_int
 
     @property
+    def selected_tab_frag(self) -> str:
+        return self._selected_tab_frag
+
+    @selected_tab_frag.setter
+    def selected_tab_frag(self, selected_tab_frag: str):
+        self._selected_tab_frag = selected_tab_frag
+
+    @property
     def visible_plot(self) -> str:
         if self.selected_tab_plot == "Peak":
             return "Peak"
@@ -152,16 +166,23 @@ class MainView():
         elif self.selected_tab_plot == "Derivatives":
             if self.selected_tab_der == "All":
                 return "Der_All"
-            
+
             elif self.selected_tab_der == "Log":
                 return "Der_Log"
 
         elif self.selected_tab_plot == "Intensity Pattern":
             if self.selected_tab_int == "All":
                 return "Int_All"
-            
+
             elif self.selected_tab_int == "Log":
                 return "Int_Log"
+
+        elif self.selected_tab_plot == "Fragmentation":
+            if self.selected_tab_frag == "Consensus":
+                return "Frag_Consensus"
+
+            elif self.selected_tab_frag == "Sample":
+                return "Frag_Sample"
 
     @property
     def plot_peak_loaded(self) -> bool:
@@ -215,6 +236,22 @@ class MainView():
 
         self.data = data
 
+        self.selected_identities_tab = 0
+
+        self.frag_threshold = 80
+        self.mzd = 0.02
+        self.fragPPM = 10
+        self.frag_option = 1
+        self.blank = ""
+
+        self.last_plot = ""
+        self.frag_update = 0
+
+        #comparison database:
+        #self.id_db = None
+        #self.id_samples = None
+        #self.update_fragmentation_dbs()
+
         ## Populate class properties
         # Set initial widget layout values
         self._set_width = 1280
@@ -229,7 +266,8 @@ class MainView():
 
         self._selected_tab_plot = "Peak"
         self._selected_tab_der = "All"
-        self._selected_tab_int = "All" 
+        self._selected_tab_int = "All"
+        self._selected_tab_frag = "Consensus"
 
         self._plot_peak_loaded = False
         self._plot_der_all_loaded = False
@@ -289,7 +327,7 @@ class MainView():
         self.style = ttk.Style()
         self.style.map('Treeview', foreground = self.fixed_map('foreground'), background = self.fixed_map('background'))
         self.style.map('Treeview', background=[('selected', 'blue')])
-        
+
         self.menubar = tk.Menu(self.root)
 
         self.filename_text = tk.StringVar()
@@ -325,9 +363,8 @@ class MainView():
         self.editmenu.add_separator()
         self.editmenu.add_command(label="Split peak", command=self.open_peak_split_dialog)
 
-
         self.menubar.add_cascade(label="Edit", menu=self.editmenu)
-        
+
         # Add 'IPA' menu item
         self.ipamenu = tk.Menu(self.menubar, tearoff=0)
         self.ipamenu.add_command(label="Export entries as IPA input", command=self.export_ipa_file)
@@ -403,19 +440,19 @@ class MainView():
         self.mid_left_frame.add(self.mid_left_top_frame)
 
         # Middle Left Bottom - Filters View
-        self.mid_left_bot_frame = tk.LabelFrame(self.mid_left_frame, padx=10, pady=10, text="Filters")  
+        self.mid_left_bot_frame = tk.LabelFrame(self.mid_left_frame, padx=10, pady=10, text="Filters")
         self.mid_left_frame.add(self.mid_left_bot_frame)
-  
+
         # Middle Right Top - Sets View
-        self.mid_right_top_frame = tk.LabelFrame(self.mid_right_frame, padx=10, pady=10, text="Sets") 
+        self.mid_right_top_frame = tk.LabelFrame(self.mid_right_frame, padx=10, pady=10, text="Sets")
         self.mid_right_frame.add(self.mid_right_top_frame)
 
         # Middle Right Mid - Details View
-        self.mid_right_mid_frame = tk.LabelFrame(self.mid_right_frame, padx=10, pady=10, text="Details") 
+        self.mid_right_mid_frame = tk.LabelFrame(self.mid_right_frame, padx=10, pady=10, text="Details")
         self.mid_right_frame.add(self.mid_right_mid_frame)
- 
+
         # Middle Right Bottom - Molecule Viewer
-        self.mid_right_bot_frame = tk.LabelFrame(self.mid_right_frame, padx=10, pady=10, text="Molecule View")      
+        self.mid_right_bot_frame = tk.LabelFrame(self.mid_right_frame, padx=10, pady=10, text="Molecule View")
         self.mid_right_frame.add(self.mid_right_bot_frame)
 
         # Info View
@@ -449,9 +486,9 @@ class MainView():
 
         # Filter View
         option_list = [
-            self.filter_options[e.Filter.Mass], 
-            self.filter_options[e.Filter.Intensity], 
-            self.filter_options[e.Filter.RetentionTime], 
+            self.filter_options[e.Filter.Mass],
+            self.filter_options[e.Filter.Intensity],
+            self.filter_options[e.Filter.RetentionTime],
             self.filter_options[e.Filter.NumberDetections],
             self.filter_options[e.Filter.Annotations],
             self.filter_options[e.Filter.Probability],
@@ -479,10 +516,12 @@ class MainView():
         self.tab_peak = ttk.Frame(self.tabs_plot)
         self.tab_derivatives = ttk.Frame(self.tabs_plot)
         self.tab_intensity_pattern = ttk.Frame(self.tabs_plot)
+        self.tab_fragmentation = ttk.Frame(self.tabs_plot)
 
         self.tabs_plot.add(self.tab_peak, text = "Peak")
         self.tabs_plot.add(self.tab_derivatives, text = "Derivatives")
         self.tabs_plot.add(self.tab_intensity_pattern, text = "Intensity Pattern")
+        self.tabs_plot.add(self.tab_fragmentation, text = "Fragmentation")
 
         self.tabs_plot.bind("<<NotebookTabChanged>>", self.change_plot_tab)
 
@@ -510,11 +549,27 @@ class MainView():
 
         self.tabs_int.pack(expand = 1, fill = "both")
 
+        self.tabs_frag = ttk.Notebook(self.tab_fragmentation)
+        self.tab_frag_con = ttk.Frame(self.tabs_frag)
+        self.tab_frag_sample = ttk.Frame(self.tabs_frag)
+
+        self.tabs_frag.add(self.tab_frag_con, text = "Consensus")
+        self.tabs_frag.add(self.tab_frag_sample, text = "Sample")
+
+        self.tabs_frag.bind("<<NotebookTabChanged>>", self.change_frags_tab)
+
+        self.tabs_frag.pack(expand = 1, fill = "both")
+
+        #TEST
+
+
         self.figure_peak, self.axes_peak = self.initialize_plot(self.tab_peak)
         self.figure_der_all, self.axes_der_all = self.initialize_plot(self.tab_der_all)
         self.figure_der_log, self.axes_der_log = self.initialize_plot(self.tab_der_log)
         self.figure_int_all, self.axes_int_all = self.initialize_plot(self.tab_int_all)
         self.figure_int_log, self.axes_int_log = self.initialize_plot(self.tab_int_log)
+        self.figure_frag_con, self.axes_frag_con = self.initialize_plot(self.tab_frag_con)
+        self.figure_frag_sample, self.axes_frag_sample = self.initialize_plot(self.tab_frag_sample)
 
         # Select initial selected plot
         default_plot = self.data.get_settings_preference_by_name("defplot")
@@ -539,6 +594,14 @@ class MainView():
             self.tabs_plot.select(2)
             self.tabs_der.select(0)
             self.tabs_int.select(1)
+        elif default_plot == "Fragmentation:Consensus":
+            self.tabs_plot.select(3)
+            self.tabs_der.select(0)
+            self.tabs_int.select(0)
+        elif default_plot == "Fragmentation:Sample":
+            self.tabs_plot.select(3)
+            self.tabs_der.select(0)
+            self.tabs_int.select(1)
 
         # Set View
         self.set_tree = self.initialize_grid(self.mid_right_top_frame, True, [("Selected", 60), ("Name", 150)])
@@ -551,10 +614,10 @@ class MainView():
         self.molecule_canvas = tk.Canvas(self.mid_right_bot_frame, bg="white")
 
         molecule_canvas_vsb = ttk.Scrollbar(self.mid_right_bot_frame, orient="vertical")
-        
+
         molecule_canvas_vsb.pack(side=tk.RIGHT, fill="y")
         molecule_canvas_hsb = ttk.Scrollbar(self.mid_right_bot_frame, orient="horizontal")
-        
+
         molecule_canvas_hsb.pack(side=tk.BOTTOM, fill="x")
         self.molecule_canvas.configure(yscrollcommand=molecule_canvas_vsb.set, xscrollcommand=molecule_canvas_hsb.set)
 
@@ -568,12 +631,30 @@ class MainView():
         self.iden_edit_selected_btn = tk.Button(iden_control_frame, text="Edit Selected", command=self.edit_selected_identity)
         self.iden_edit_selected_btn["state"] = "disabled"
         self.iden_edit_selected_btn.grid(row=0, column=0, padx=(2,2), pady=(2,2), sticky="NEW")
+        self.iden_frag_comp_btn = tk.Button(iden_control_frame, text="Fragment Comparison", command=self.open_fragment_comparison_dialog)
+        self.iden_frag_comp_btn["state"] = "disabled"
+        self.iden_frag_comp_btn.grid(row=1, column=0, padx=(2,2), pady=(2,2), sticky="NEW")
         self.iden_delete_checked_btn = tk.Button(iden_control_frame, text="Delete Checked", command=self.delete_checked_identities)
         self.iden_delete_checked_btn["state"] = "disabled"
-        self.iden_delete_checked_btn.grid(row=1, column=0, padx=(2,2), pady=(2,2), sticky="NEW")
+        self.iden_delete_checked_btn.grid(row=2, column=0, padx=(2,2), pady=(2,2), sticky="NEW")
 
-        self.iden_tree = self.initialize_grid(self.bot_frame, True, [("Selected", 40), ("ID", 100), ("Formula", 150), ("PPM", 100), ("Adduct", 150), ("Name", 150), ("Class", 150), ("Description", 200), ("Prior", 100), ("Post", 100), ("Notes", 200)])
+        self.identities = ttk.Notebook(self.bot_frame)
+        self.general_tree = ttk.Frame(self.identities)
+        self.IPA_tree = ttk.Frame(self.identities)
+        self.identities.add(self.general_tree, text = "General")
+        self.identities.add(self.IPA_tree, text = "IPA")
 
+        self.identities.pack()
+        self.identities.bind("<<NotebookTabChanged>>", self.iden_tab_changed)
+
+        #api tree
+        self.IPA_iden_tree = self.initialize_grid(self.IPA_tree, True, [("Selected", 40), ("ID", 100), ("Name", 150), ("Formula", 150), ("Adduct", 80), ("M/Z", 150), ("Charge", 50), ("PPM", 100), ("Isotope pattern score", 150), ("Fragmentation pattern score", 200), ("Prior", 100), ("Post", 100), ("Post Gibbs", 100), ("\u03A7^2 pval", 100)])
+        self.IPA_iden_tree.tag_configure("not_focus", foreground="black")
+        self.IPA_iden_tree.tag_configure("is_focus", foreground="white", background="blue")
+        self.IPA_iden_tree.bind('<ButtonRelease-1>', self.IPA_select_iden)
+
+        #general tree
+        self.iden_tree = self.initialize_grid(self.general_tree, True, [("Selected", 40), ("ID", 100), ("Formula", 150), ("PPM", 100), ("Adduct", 150), ("Name", 150), ("Class", 150), ("Description", 200), ("Prior", 100), ("Post", 100), ("Notes", 200)])
         self.iden_tree.bind('<ButtonRelease-1>', self.select_iden)
         self.iden_tree.bind('<KeyRelease-Up>', self.select_iden)
         self.iden_tree.bind('<KeyRelease-Down>', self.select_iden)
@@ -593,10 +674,32 @@ class MainView():
 
     # Fix to bug with tkinter
     def fixed_map(self, option):
-        return [elm for elm in self.style.map("Treeview", query_opt=option) 
+        return [elm for elm in self.style.map("Treeview", query_opt=option)
                 if elm[:2] != ("!disabled","!selected")]
 
+    def iden_tab_changed(self,event):
+        self.selected_identities_tab = self.identities.index(self.identities.select())
+        self.refresh_identification_grid()
+
+
 #region Layout methods
+
+    # def update_fragmentation_dbs(self):
+    #     type1 = self.data.get_settings_frag_database_type_1_paths()["Path"].tolist()
+    #     type2 = self.data.get_settings_frag_database_type_2_paths()["Path"].tolist()
+
+
+    #     dbs = []
+    #     for i in type1:
+    #         dbs.append(pd.read_csv(i, header=0))
+    #     self.id_db = pd.concat(dbs)
+
+    #     dbs = []
+    #     for i in type2:
+    #         dbs.append(pd.read_csv(i, header=0))
+    #     self.id_samples = pd.concat(dbs)
+
+
 
 #   https://stackoverflow.com/questions/38600625/do-something-after-a-period-of-gui-user-inactivity-tkinter
     def reset_configure_timer(self, event=None):
@@ -608,6 +711,8 @@ class MainView():
 
         # create new
         configure_timer = self.root.after(200, self.update_layout_if_resize)
+
+
 
     def update_layout(self, vf_0, vf_1, mf_0, mf_1, mlf_0, mrf_0, mrf_1):
 
@@ -622,11 +727,11 @@ class MainView():
         self.mid_frame.sash_place(0, mf_0, 1)
         self.mid_frame.update()
         self.mid_frame.sash_place(1, mf_1, 1)
-        
+
         # MLF
         self.mid_left_frame.update()
         self.mid_left_frame.sash_place(0, 1, mlf_0)
-        
+
         # MRF
         self.mid_right_frame.update()
         self.mid_right_frame.sash_place(0, 1, mrf_0)
@@ -664,13 +769,13 @@ class MainView():
         # Update layout, if overall window size has changed.
         if (current_height != self.set_height or current_width != self.set_width):
 
-            height_change = current_height - self.set_height 
+            height_change = current_height - self.set_height
             width_change = current_width - self.set_width
 
             self.set_height = current_height
             self.set_width = current_width
 
-            # Fixed height, not modified 
+            # Fixed height, not modified
             vf0_u = self.set_vf0
             # Increasing the height should be able to increase this an unlimited amount.
             vf1_u = self.set_vf1 + height_change
@@ -705,8 +810,8 @@ class MainView():
         canvas.draw()
 
         return figure, axes
-        
-    def initialize_grid(self, frame, is_checkbox, columns):        
+
+    def initialize_grid(self, frame, is_checkbox, columns):
         if is_checkbox:
             tree = ttkw.CheckboxTreeview(frame, selectmode="browse", columns=len(columns))
         else:
@@ -722,10 +827,10 @@ class MainView():
             tree.column("#{0}".format(i), width = columns[i][1], stretch = False, anchor=tk.CENTER)
 
         tree_vsb = ttk.Scrollbar(frame, orient="vertical")
-        
+
         tree_vsb.pack(side=tk.RIGHT, fill="y")
         tree_hsb = ttk.Scrollbar(frame, orient="horizontal")
-        
+
         tree_hsb.pack(side=tk.BOTTOM, fill="x")
         tree.configure(yscrollcommand=tree_vsb.set, xscrollcommand=tree_hsb.set)
 
@@ -835,7 +940,7 @@ class MainView():
 
         except Exception as err:
             self.handle_error("Unable to export PeakML file.", err)
-        
+
         p.update_progress("File exported.", 100)
 
     def export_ipa_rdata_file(self):
@@ -846,7 +951,7 @@ class MainView():
 
         except Exception as err:
             self.handle_error("Unable to export IPA file.", err)
-        
+
         p.update_progress("File exported.", 100)
 
     def export_ipa_priors_rdata_file(self):
@@ -857,7 +962,7 @@ class MainView():
 
         except Exception as err:
             self.handle_error("Unable to export IPA file.", err)
-        
+
         p.update_progress("File exported.", 100)
 
 #endregion
@@ -875,7 +980,7 @@ class MainView():
         except Exception as err:
             self.handle_error("Unable to open PeakML file.", err)
 
-    def file_save(self):     
+    def file_save(self):
         try:
             reply = mb.askokcancel(title="Update Imported File", message=f"Are you sure you want to update the imported file '{self.data.import_peakml_filename}'?")
             if reply == True:
@@ -931,10 +1036,18 @@ class MainView():
             self.handle_error("Unable to open IPA file.", err)
 
     def open_preferences_dialog(self):
-        dlg = PreferencesDialog(self.root,"Preferences", self.data)
+        dlg = PreferencesDialog(self.root,"Preferences", self.data, self.frag_threshold, self.fragPPM, self.mzd, self.frag_option, self.blank)
         if dlg.submit:
-            self.data.update_settings(dlg.decdp, dlg.defplot, dlg.databases)
+            self.data.update_settings(dlg.decdp, dlg.defplot, dlg.databases, dlg.frag_databases_type_1, dlg.frag_databases_type_2)
             self.run_process_with_progress(self.refresh_entry_selected)
+            self.frag_threshold = dlg.threshold
+            self.mzd = dlg.frag_absolute
+            self.fragPPM = dlg.frag_ppm
+            self.frag_option = dlg.frag_option
+            self.blank = dlg.blank
+            #self.update_fragmentation_dbs()
+            self.data.import_fragment_databases()
+
 
     def open_log_dialog(self):
         LogDialog(self.root)
@@ -944,15 +1057,67 @@ class MainView():
         dlg = PeakSplitDialog(self.root, "Set Retention Time for Peak Split", rt_mean, self.data.plot_peak_view_dataframe)
         if dlg.submit:
             self.data.peak_split_retention_time = f"{dlg.retention_time_min}:{dlg.retention_time_sec}"
-
+            self.data.group_split_peak = dlg.group_split
             self.run_process_with_progress(self.split_peak_on_retention_time)
-        
+
+    def open_fragment_comparison_dialog(self):
+
+        selected = self.data.identification_view_dataframe.loc[self.data.identification_view_dataframe["Selected"] == True]
+
+
+        fragment_samples = []
+
+        if self.blank == "":
+            self.blank = "############"
+
+        data = self.data.plot_frag_view_dataframe
+        for index, row in data.iterrows():
+            if self.blank not in row['Label']:
+                frags = list(dict.fromkeys(row['Fragments']))
+                con_mz = []
+                con_ints = []
+
+                for fragment in frags:
+                    a = fragment.split(',')
+                    con_mz.append(float(a[0]))
+                    con_ints.append(float(a[1]))
+
+                fragment_samples.append(SampleFragmentsItem(con_mz,con_ints))
+
+        if self.blank == "############":
+            self.blank = ""
+
+        if self.frag_option == 2:
+            con = ConsensusSpec(fragment_samples,float(self.frag_threshold)/100,self.mzd,0)
+        else:
+            con = ConsensusSpec(fragment_samples,float(self.frag_threshold)/100,0,self.fragPPM)
+
+
+
+
+        if self.selected_identities_tab == 0:
+            if self.frag_option == 2:
+                dlg = FragmentComparisonDialog(self.root,"Fragment Comparison",con,selected["ID"].values[0],self.data.fragment_id_db,self.data.fragment_id_samples,self.mzd,0)
+            else:
+                dlg = FragmentComparisonDialog(self.root,"Fragment Comparison",con,selected["ID"].values[0],self.data.fragment_id_db,self.data.fragment_id_samples,0,self.fragPPM)
+        else:
+            if self.frag_option == 2:
+                dlg = FragmentComparisonDialog(self.root,"Fragment Comparison",con,selected["IPA_id"].values[0],self.data.fragment_id_db,self.data.fragment_id_samples,self.mzd,0)
+            else:
+                dlg = FragmentComparisonDialog(self.root,"Fragment Comparison",con,selected["IPA_id"].values[0],self.data.fragment_id_db,self.data.fragment_id_samples,0,self.fragPPM)
+
     def split_peak_on_retention_time(self):
         p.update_progress("Splitting peak", 0)
-
+        group_split = self.data.group_split_peak
         try:
             # Load data objects
-            self.data.split_selected_peak_on_retention_time()
+            #self.data.split_selected_peak_on_retention_time()
+            #self.data.group_split_selected_peak_on_retention_time()
+            if group_split == 1:
+                self.data.group_split_selected_peak_on_retention_time()
+            else:
+                self.data.split_selected_peak_on_retention_time()
+
 
             # Update UI widgets
             self.load_data_from_views()
@@ -1013,13 +1178,16 @@ class MainView():
         self.plot_der_log_loaded = False
         self.plot_int_all_loaded = False
         self.plot_int_log_loaded = False
+        self.plot_frag_con_loaded = False
+        self.plot_frag_sample_loaded = False
+
         self.load_plot()
 
         lg.log_progress("Plot loaded.")
 
     def refresh_info_values(self):
         self.filename_text.set(self.data.import_peakml_filename)
-        self.peak_number_text.set(self.data.nr_peaks_details) 
+        self.peak_number_text.set(self.data.nr_peaks_details)
 
         if self.data.prior_probabilities_modified:
             self.warning_text.set("Warning: Prior values have been updated since import, so posterior probabilities will need to be recalculated.")
@@ -1048,13 +1216,13 @@ class MainView():
                     self.current_entry = i
 
                 # Add entries to tree
-                self.entry_tree.insert("",i,i, values=(entry_row["RT"], entry_row["Mass"], entry_row["Intensity"], entry_row["Nrpeaks"]), tags=(entry_row["UID"], focus, "checked" if entry_row["Checked"] == True else "unchecked")) 
+                self.entry_tree.insert("",i,i, values=(entry_row["RT"], entry_row["Mass"], entry_row["Intensity"], entry_row["Nrpeaks"]), tags=(entry_row["UID"], focus, "checked" if entry_row["Checked"] == True else "unchecked"))
 
                 p.update_progress(f"Populating peak {(i+1)} of {len(self.df_entry)} to Entry View")
 
         # If any entries, enable button for adding filters.
         if len(self.entry_tree.get_children()) > 0:
-            self.filter_add_btn["state"] = "normal"    
+            self.filter_add_btn["state"] = "normal"
         else:
             self.filter_add_btn["state"] = "disabled"
 
@@ -1064,14 +1232,18 @@ class MainView():
         else:
             self.entry_delete_checked_btn["state"] = "disabled"
 
+        #update frg comparison button
+
+
     def select_entry(self, event):
-     
+
         lg.log_progress("Begin selecting entry.")
 
         # Use currently focused row to update the tags on that one.
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify("element", x, y)
         checked_item = self.entry_tree.identify("item", x, y)
+
 
         if "image" in elem:
             # Save check status of each list
@@ -1100,7 +1272,7 @@ class MainView():
 
                     self.current_entry = selected_item
 
-                    self.data.selected_entry_uid = focused_entry["tags"][0]   
+                    self.data.selected_entry_uid = focused_entry["tags"][0]
 
                 lg.log_progress("Load selected entry details.")
                 #Attempt to load details of record, if unable revert to previously selected record.
@@ -1147,6 +1319,46 @@ class MainView():
 
 #region Sets View Methods
 
+    def refresh_set_grid(self):
+        try:
+            self.set_tree.delete(*self.set_tree.get_children())
+        except:
+            pass
+
+        # Load set view data
+        df_sets = self.data.set_view_dataframe
+
+
+        if df_sets is not None:
+            # Filter to sets which have no parent value (so are the parents)
+            df_sets_parent = df_sets.loc[df_sets['Parent'].isnull()]
+
+            if df_sets_parent is not None:
+                for i in range(len(df_sets_parent)):
+                    set_parent_row = df_sets_parent.iloc[i]
+                    name_parent = set_parent_row["Name"]
+
+                    select_parent = "checked" if set_parent_row["Checked"] else "unchecked"
+
+                    colour_tag = "colour_" + name_parent
+
+                    self.set_tree.tag_configure(colour_tag, foreground=set_parent_row["Color"])
+                    folder = self.set_tree.insert("", i, f"P-{name_parent}", values=(name_parent), tags=("uid",select_parent, colour_tag))
+
+
+                    df_sets_child = df_sets.loc[df_sets['Parent'] == name_parent]
+                    data = self.data.plot_frag_view_dataframe
+                    if df_sets_child is not None:
+
+                        for j in range(len(df_sets_child)):
+                            set_child_row = df_sets_child.iloc[j]
+                            select_child = "checked" if set_child_row["Checked"] else "unchecked"
+
+                            name_child = set_child_row["Name"]
+
+                            self.set_tree.insert(folder, "end", f"C-{name_child}", values=(name_child), tags=(set_child_row["UID"], select_child, colour_tag))
+
+
     def update_sets_view(self, event):
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify("element", x, y)
@@ -1158,14 +1370,19 @@ class MainView():
                     selected_status = False if self.set_tree.item(child_item)["tags"][2] == "unchecked" else True
                     self.data.update_set_checked_status(uid, selected_status)
             # Refresh grid
+            self.frag_update = 1
             self.generate_plot_peak()
+            self.generate_plot_frag_sample()
+            self.generate_plot_frag_con()
+            self.frag_update = 0
 
-    def refresh_set_grid(self):
-        # Clear grid  
+    def refresh_sets_for_samples(self):
+        # Clear grid
         self.set_tree.delete(*self.set_tree.get_children())
 
         # Load set view data
         df_sets = self.data.set_view_dataframe
+
 
         if df_sets is not None:
             # Filter to sets which have no parent value (so are the parents)
@@ -1173,45 +1390,62 @@ class MainView():
 
             if df_sets_parent is not None:
                 for i in range(len(df_sets_parent)):
-                    set_parent_row = df_sets_parent.iloc[i]    
+                    selected = self.data.plot_frag_view_dataframe["Label"].tolist()
+                    set_parent_row = df_sets_parent.iloc[i]
                     name_parent = set_parent_row["Name"]
 
                     select_parent = "checked" if set_parent_row["Checked"] else "unchecked"
 
                     colour_tag = "colour_" + name_parent
                     self.set_tree.tag_configure(colour_tag, foreground=set_parent_row["Color"])
-                    folder = self.set_tree.insert("", i, f"P-{name_parent}", values=(name_parent), tags=("uid",select_parent, colour_tag))
-                    
+
+                    if any(name_parent in s for s in selected):
+                        folder = self.set_tree.insert("", i, f"P-{name_parent}", values=(name_parent), tags=("uid",select_parent, colour_tag))
+                    else:
+                        folder = self.set_tree.insert("", i, f"P-{name_parent}", values=(name_parent), tags=("uid",select_parent, "#4d4a4b"))
+
                     df_sets_child = df_sets.loc[df_sets['Parent'] == name_parent]
+
+
 
                     if df_sets_child is not None:
 
                         for j in range(len(df_sets_child)):
-                            set_child_row = df_sets_child.iloc[j]    
+                            set_child_row = df_sets_child.iloc[j]
                             select_child = "checked" if set_child_row["Checked"] else "unchecked"
 
                             name_child = set_child_row["Name"]
 
-                            self.set_tree.insert(folder, "end", f"C-{name_child}", values=(name_child), tags=(set_child_row["UID"], select_child, colour_tag))
+
+                            if name_child in selected:
+                                self.set_tree.insert(folder, "end", f"C-{name_child}", values=(name_child), tags=(set_child_row["UID"], select_child, colour_tag))
+                            else:
+                                self.set_tree.insert(folder, "end", f"C-{name_child}", values=(name_child), tags=(set_child_row["UID"], select_child, "#4d4a4b"))
 
 #endregion
 
 #region Annotation Methods
 
-    def refresh_annotation_grid(self):    
+    def refresh_annotation_grid(self):
         self.ann_tree.delete(*self.ann_tree.get_children())
         df_annotation = self.data.annotation_view_dataframe
 
         if df_annotation is not None:
             for i in range(len(df_annotation)):
                 ann_row = df_annotation.iloc[i]
-                self.ann_tree.insert("", i, i, values=(ann_row["Label"], ann_row["Value"]))
+                if "IPA" not in ann_row["Label"]:
+                    self.ann_tree.insert("", i, i, values=(ann_row["Label"], ann_row["Value"]))
 
 #endregion
 
 #region Identification View methods
     def refresh_identification_grid(self):
-        self.iden_tree.delete(*self.iden_tree.get_children())
+        #general tree
+        try:
+            self.iden_tree.delete(*self.iden_tree.get_children())
+            self.IPA_iden_tree.delete(*self.IPA_iden_tree.get_children())
+        except:
+            pass
         df_identification = self.data.identification_view_dataframe
 
         smiles_details = inchi_details = None
@@ -1221,8 +1455,9 @@ class MainView():
                 iden_row = df_identification.iloc[i]
                 focus = "is_focus" if iden_row["Selected"] == True else "not_focus"
                 checked = "checked" if iden_row["Checked"] == True else "unchecked"
-                self.iden_tree.insert("",i,i, values=(iden_row["ID"],iden_row["Formula"],iden_row["PPM"],iden_row["Adduct"],iden_row["Name"],iden_row["Class"],iden_row["Description"],iden_row["Prior"],iden_row["Post"],iden_row["Notes"]), tags=(iden_row["UID"], focus, checked))
-                
+                if iden_row["ID"] != "":
+                    self.iden_tree.insert("",i,i, values=(iden_row["ID"],iden_row["Formula"],iden_row["PPM"],iden_row["Adduct"],iden_row["Name"],iden_row["Class"],iden_row["Description"],iden_row["Prior"],iden_row["Post"],iden_row["Notes"]), tags=(iden_row["UID"], focus, checked))
+
                 if iden_row["Selected"] == True:
                     smiles_details = iden_row["Smiles"]
                     inchi_details = iden_row["InChi"]
@@ -1237,7 +1472,25 @@ class MainView():
         else:
             self.iden_delete_checked_btn["state"] = "disabled"
 
+        #IPA tree
+        if df_identification is not None:
+            for i in range(len(df_identification)):
+                iden_row = df_identification.iloc[i]
+                focus = "is_focus" if iden_row["Selected"] == True else "not_focus"
+                checked = "checked" if iden_row["Checked"] == True else "unchecked"
+                if iden_row["IPA_id"] != "":
+                    self.IPA_iden_tree.insert("",i,i, values=(iden_row["IPA_id"],iden_row["IPA_name"],iden_row["IPA_formula"],iden_row["IPA_adduct"],iden_row["IPA_mz"],iden_row["IPA_charge"],iden_row["IPA_ppm"],iden_row["IPA_isotope_pattern_score"],iden_row["IPA_fragmentation_pattern_score"],iden_row["IPA_prior"],iden_row["IPA_post"],iden_row["IPA_post_Gibbs"],iden_row["IPA_post_chi_square_pval"]), tags=(iden_row["UID"], focus, checked))
+
+                if iden_row["Selected"] == True:
+                    if self.selected_identities_tab == 0:
+                        smiles_details = iden_row["Smiles"]
+                        inchi_details = iden_row["InChi"]
+                    else:
+                        smiles_details = iden_row["IPA_smiles"]
+                        inchi_details = iden_row["IPA_inchi"]
+
         self.refresh_molecule_canvas(inchi_details, smiles_details)
+
 
     def refresh_molecule_canvas(self, inchi_data, smiles_data):
         self.molecule_canvas.delete("all")
@@ -1248,12 +1501,30 @@ class MainView():
 
         elif smiles_data is not None and inchi_data != '':
             mol = Chem.MolFromSmiles(smiles_data)
-            mol_image = Draw.MolToImage(mol, size=(300,200))       
+            mol_image = Draw.MolToImage(mol, size=(300,200))
         else:
             mol_image = Image.new(mode="RGB", size=(300,200), color = (255, 255, 255))
 
         self.mol_img = ImageTk.PhotoImage(mol_image)
         self.molecule_canvas.create_image(150, 100, image=self.mol_img)
+
+    def IPA_select_iden(self, event):
+        selected_item = self.IPA_iden_tree.item(self.IPA_iden_tree.focus())
+        x, y, widget = event.x, event.y, event.widget
+        elem = widget.identify("element", x, y)
+        checked_item = self.IPA_iden_tree.identify("item", x, y)
+        if "image" in elem:
+            uid = self.IPA_iden_tree.item(checked_item)["tags"][0]
+            selected_status = False if self.IPA_iden_tree.item(checked_item)["tags"][2] == "unchecked" else True
+            self.data.update_identification_checked_status(uid, selected_status)
+
+            if self.data.check_if_any_checked_identifications():
+                self.iden_delete_checked_btn["state"] = "normal"
+            else:
+                self.iden_delete_checked_btn["state"] = "disabled"
+
+        else:
+            self.refresh_iden_selected()
 
     def select_iden(self, event):
         x, y, widget = event.x, event.y, event.widget
@@ -1272,13 +1543,43 @@ class MainView():
             self.refresh_iden_selected()
 
     def refresh_iden_selected(self):
-        focused_iden = self.iden_tree.item(self.iden_tree.focus())
+        if self.selected_identities_tab == 0:
+            focused_iden = self.iden_tree.item(self.iden_tree.focus())
+        else:
+            focused_iden = self.IPA_iden_tree.item(self.IPA_iden_tree.focus())
+
+
+
 
         if focused_iden["tags"]:
             focused_id = focused_iden["tags"][0]
             self.data.selected_identification_uid = focused_id
+            "focused"
+
+
 
         self.refresh_identification_grid()
+
+        selected = self.data.identification_view_dataframe.loc[self.data.identification_view_dataframe["Selected"] == True]
+
+
+        if self.selected_identities_tab == 0:
+            ms2 = self.data.fragment_id_db.loc[self.data.fragment_id_db['id'] == selected["ID"].values[0]]
+        else:
+            ms2 = self.data.fragment_id_db.loc[self.data.fragment_id_db['id'] == selected["IPA_id"].values[0]]
+
+        try:
+            sample_data = self.data.fragment_id_samples[self.data.fragment_id_samples["MonaID"] == ms2["MS2"].values[0]]
+        except:
+            sample_data = None
+
+        if sample_data is not None:
+            if (sample_data.empty) or (self.data.plot_frag_view_dataframe['Fragments'].empty):
+                self.iden_frag_comp_btn["state"] = "disabled"
+            else:
+                self.iden_frag_comp_btn["state"] = "normal"
+        else:
+            self.iden_frag_comp_btn["state"] = "disabled"
 
     def delete_checked_identities(self):
         if self.data.ipa_imported:
@@ -1288,7 +1589,7 @@ class MainView():
 
         reply = mb.askokcancel(title="Delete Checked", message=warning_message)
         if reply == True:
-            self.data.remove_checked_identifications()
+            self.data.remove_checked_identifications(self.selected_identities_tab)
             self.refresh_identification_grid()
             self.refresh_info_values()
 
@@ -1320,6 +1621,10 @@ class MainView():
         self.selected_tab_int = self.tabs_int.tab(self.tabs_int.select(), "text")
         self.load_plot()
 
+    def change_frags_tab(self, event):
+        self.selected_tab_frag = self.tabs_frag.tab(self.tabs_frag.select(), "text")
+        self.load_plot()
+
     def load_plot(self):
         if self.visible_plot == "Peak":
             if not self.plot_peak_loaded:
@@ -1341,8 +1646,22 @@ class MainView():
             if not self.plot_int_log_loaded:
                 self.generate_plot_int_log()
 
+        elif self.visible_plot == "Frag_Consensus":
+            if not self.plot_frag_con_loaded:
+                self.generate_plot_frag_con()
+
+
+        elif self.visible_plot == "Frag_Sample":
+            if not self.plot_frag_sample_loaded:
+                self.generate_plot_frag_sample()
+
+
     def generate_plot_peak(self):
-        df = self.data.plot_peak_view_dataframe   
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
+        df = self.data.plot_peak_view_dataframe
         plot_count = len(df)
         self.axes_peak.clear()
         for i in range(plot_count):
@@ -1360,19 +1679,31 @@ class MainView():
         self.axes_peak.set_ylabel("Intensity")
 
         date_format = DateFormatter("%M:%S")
-        self.axes_peak.xaxis.set_major_formatter(date_format)    
+        self.axes_peak.xaxis.set_major_formatter(date_format)
 
         self.figure_peak.canvas.draw()
 
     def generate_plot_der_all(self):
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
         df = self.data.plot_der_view_dataframe
         self.generate_plot_der(df, "All", self.figure_der_all, self.axes_der_all)
 
     def generate_plot_der_log(self):
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
         df = self.data.plot_der_view_dataframe
         self.generate_plot_der(df, "Log", self.figure_der_log, self.axes_der_log)
-        
+
     def generate_plot_der(self, data, type, figure_der, axes_der):
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
         axes_der.clear()
 
         mass_values = np.array(data['Mass'])
@@ -1401,6 +1732,10 @@ class MainView():
         #figure_der.tight_layout()
 
     def generate_plot_int_all(self):
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
         data = self.data.plot_int_view_dataframe
         self.axes_int_all.clear()
 
@@ -1419,6 +1754,10 @@ class MainView():
         self.figure_int_all.canvas.draw()
 
     def generate_plot_int_log(self):
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
         data = self.data.plot_int_view_dataframe
         self.axes_int_log.clear()
 
@@ -1440,6 +1779,110 @@ class MainView():
 
         self.figure_int_log.canvas.draw()
 
+    def generate_plot_frag_con(self):
+        if self.last_plot == "sample" and self.frag_update == 0:
+            self.refresh_set_grid()
+            self.last_plot = ""
+
+        data = self.data.plot_frag_view_dataframe
+        self.axes_frag_con.clear()
+
+
+        fragment_samples = []
+
+        if self.blank == "":
+            self.blank = "############"
+
+
+
+        for i in range(len(data)):
+            plot_label = data.iloc[i]['Label']
+            visible = self.data.get_set_checked_status(plot_label)
+            if visible:
+                if self.blank not in plot_label:
+                    con_mz = []
+                    con_ints = []
+
+                    frags = data.iloc[i]['Fragments']
+
+                    for f in frags:
+                        a = f.split(',')
+                        con_mz.append(float(a[0]))
+                        con_ints.append(float(a[1]))
+
+                    fragment_samples.append(SampleFragmentsItem(con_mz,con_ints))
+
+
+        if self.blank == "############":
+            self.blank = ""
+
+        if fragment_samples:
+            if self.frag_option == 2:
+                con = ConsensusSpec(fragment_samples,float(self.frag_threshold)/100,self.mzd,0)
+            else:
+                con = ConsensusSpec(fragment_samples,float(self.frag_threshold)/100,0,self.fragPPM)
+
+            frag_counter = 0
+
+            while frag_counter < len(con.mz):
+                x = [float(con.mz[frag_counter]),con.mz[frag_counter]]
+                y = [0,float(con.intensity[frag_counter])]
+                self.axes_frag_con.plot(x,y,linewidth=2, color="black")
+                frag_counter += 1
+
+        self.axes_frag_con.set_ylim(bottom=0)
+        self.axes_frag_con.set_xlabel("m/z")
+        self.axes_frag_con.set_ylabel("relative intensity")
+
+        self.figure_frag_con.canvas.draw()
+
+
+    def generate_plot_frag_sample(self):
+        if self.last_plot == "" and self.frag_update == 0:
+            self.refresh_sets_for_samples()
+            self.last_plot = "sample"
+
+
+
+        data = self.data.plot_frag_view_dataframe
+        self.axes_frag_sample.clear()
+
+
+
+        for i in range(len(data)):
+            plot_label = data.iloc[i]['Label']
+            visible = self.data.get_set_checked_status(plot_label)
+            if visible:
+                frags = data.iloc[i]['Fragments']
+                xs = []
+                ys = []
+                for j in frags:
+                    frag = j.split(',')
+                    xs.append(float(frag[0]))
+                    ys.append(float(frag[1]))
+
+                maxim= max(ys)
+                new_ys = []
+                for j in ys:
+                    new_ys.append((j/maxim)*100)
+
+                frags = []
+                for j in range(len(new_ys)):
+                    frags.append(str(xs[j]) + "," + str(new_ys[j]))
+
+
+                for fragment in frags:
+                    frag_data = fragment.split(',')
+                    x = [float(frag_data[0]),float(frag_data[0])]
+                    y = [0,float(frag_data[1])]
+                    if visible:
+                        self.axes_frag_sample.plot(x,y,linewidth=2, color="black",label=plot_label)
+
+        self.axes_frag_sample.set_ylim(bottom=0)
+        self.axes_frag_sample.set_xlabel("m/z")
+        self.axes_frag_sample.set_ylabel("relative intensity")
+
+        self.figure_frag_sample.canvas.draw()
 #endregion
 
 #region Filter methods

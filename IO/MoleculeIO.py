@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from Data.Molecule import Molecule
 import Logger as lg
 import os
+import pandas as pd
 
 from typing import Dict
 
@@ -83,3 +84,57 @@ def load_molecule_databases() -> Dict[str, Molecule]:
 
     return molecules
             
+def load_fragment_databases() -> Dict[str, Molecule]:
+
+    settings_tree_data = None
+
+    try:
+            # If errors while attempt to read, requires conversion.
+        with open(os.path.join(lg.current_directory,"settings.xml"))as f:
+            settings_tree_data = f.read()
+
+    except Exception as err:
+        lg.log_error(f'Unable to read fragment library paths from settings xml: {err}')
+
+    if settings_tree_data:
+        settings_root = ET.fromstring(settings_tree_data)
+
+        # Fragment database type 1
+        fragment_1_databases = []
+        for fragment_1_database_paths in settings_root.findall("./settings/fragDatabasesType1/fragDatabase"):
+
+            try:
+
+                # If not full path uses FragmentDatabases folder
+                if ("\\") in fragment_1_database_paths.text and ("/") in fragment_1_database_paths.text:
+                    path = fragment_1_database_paths.text
+                else:
+                    path = os.path.join(lg.current_directory,"FragmentDatabases",fragment_1_database_paths.text)
+
+                fragment_1_databases.append(pd.read_csv(path, header=0))
+
+            except Exception as err:               
+                lg.log_error(f'Unable to import details from type 1 fragment library: {err}')
+        
+
+        # Fragment database type 2
+        fragment_2_databases = []
+        for fragment_2_database_paths in settings_root.findall("./settings/fragDatabasesType2/fragDatabase"):
+
+            try:
+
+                # If not full path uses FragmentDatabases folder
+                if ("\\") in fragment_2_database_paths.text and ("/") in fragment_2_database_paths.text:
+                    path = fragment_2_database_paths.text
+                else:
+                    path = os.path.join(lg.current_directory,"FragmentDatabases",fragment_2_database_paths.text)
+
+                fragment_2_databases.append(pd.read_csv(path, header=0))
+
+            except Exception as err:
+                lg.log_error(f'Unable to import details from type 2 fragment library: {err}')
+
+    id_db = pd.concat(fragment_1_databases)
+    id_samples = pd.concat(fragment_2_databases)    
+
+    return id_db, id_samples
