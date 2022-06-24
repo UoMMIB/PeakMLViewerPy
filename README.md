@@ -66,8 +66,9 @@ Executable file available in dist folder.
 
 3. Run the following as bash script in location for install:
 ```
-# Go to the folder where to install the viewer
-cd /path/to/folder
+# Create the following folder in the homw
+mkdir Source
+cd Source
 
 # Check if git is already installed. If you don’t have it installed already, the following command will prompt you to install it.
 git --version 
