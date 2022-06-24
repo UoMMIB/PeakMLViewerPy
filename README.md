@@ -32,8 +32,8 @@ Source can be run in Python with the following third-party libraries installed.
 mkdir Source
 cd Source
 sudo apt install git
-git clone https://github.com/weaglesBio/MetabolomicModellingMSc
-cd MetabolomicModellingMSc
+git clone https://github.com/UoMMIB/PeakMLViewerPy
+cd PeakMLViewerPy
 
 # Set up virtual environment to install libraries (required for rdkit)
 
@@ -73,8 +73,8 @@ cd Source
 # Installs XCode to install git if not installed
 git --version 
 
-git clone https://github.com/weaglesBio/MetabolomicModellingMSc
-cd MetabolomicModellingMSc
+git clone https://github.com/UoMMIB/PeakMLViewerPy
+cd PeakMLViewerPy
 
 # Set up virtual environment to install libraries (required for rdkit)
 
@@ -107,8 +107,8 @@ mkdir Source
 cd Source
 sudo apt install git
 sudo apt-get install -y binutils libc6
-git clone https://github.com/weaglesBio/MetabolomicModellingMSc
-cd MetabolomicModellingMSc
+git clone https://github.com/UoMMIB/PeakMLViewerPy
+cd PeakMLViewerPy
 
 # Set up virtual environment to install libraries (required for rdkit)
 
