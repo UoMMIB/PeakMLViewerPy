@@ -66,11 +66,10 @@ Executable file available in dist folder.
 
 3. Run the following as bash script in location for install:
 ```
-# Download the source using git
-mkdir Source
-cd Source
+# Go to the folder where to install the viewer
+cd /path/to/folder
 
-# Installs XCode to install git if not installed
+# Check if git is already installed. If you don’t have it installed already, the following command will prompt you to install it.
 git --version 
 
 git clone https://github.com/UoMMIB/PeakMLViewerPy
