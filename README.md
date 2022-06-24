@@ -56,7 +56,7 @@ Executable file available in dist folder.
 ***
 ## Packag from source (macOS)
 
-1. Install latest version of miniconda (\url{https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html}).
+1. Install latest version of miniconda (https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html).
 2. Run the following to initialise miniconda.
 ```
     source anaconda3/bin/activate
