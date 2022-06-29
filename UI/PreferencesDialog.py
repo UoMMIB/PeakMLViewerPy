@@ -123,7 +123,7 @@ class PreferencesDialog(ViewerDialog):
 
         self.lbl_threshold = tk.Label(self.tab_fragmentation, width=15, text="Consensus threshold:")
         self.spbx_threshold = tk.Spinbox(self.tab_fragmentation, width=15, from_=1, to=100, state='readonly', textvariable=self.frag_thr)
-S
+        
         self.lbl_threshold.grid(row=0, column=0, padx=(2,2), pady=(5,5),sticky="NEWS")
         self.spbx_threshold.grid(row=0, column=1, padx=(2,2), pady=(5,5),sticky="NEWS")
 
