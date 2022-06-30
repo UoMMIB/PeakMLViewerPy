@@ -131,7 +131,7 @@ pyinstaller PeakMLViewerPy_oslinux.spec
 
 cp settings.xml dist
 cp -r MoleculeDatabases dist
-cp -r FragmentDatabases dist/PeakMLViewerPy
+cp -r FragmentDatabases dist
 ```
 Can be run by clicking binary file available in dist folder.
 ***
