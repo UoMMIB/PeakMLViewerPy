@@ -89,11 +89,14 @@ pip install pyreadr
 pip install scipy
 pip install molmass
 pip install pyinstaller
+pip uninstall numpy
+pip install numpy
 
 pyinstaller PeakMLViewerPy_osmac.spec
 
 cp settings.xml dist/PeakMLViewerPy
 cp -r MoleculeDatabases dist/PeakMLViewerPy
+cp -r FragmentDatabases dist/PeakMLViewerPy
 ```
 
 Executable file available in dist/PeakMLViewerPy folder.
@@ -128,6 +131,7 @@ pyinstaller PeakMLViewerPy_oslinux.spec
 
 cp settings.xml dist
 cp -r MoleculeDatabases dist
+cp -r FragmentDatabases dist/PeakMLViewerPy
 ```
 Can be run by clicking binary file available in dist folder.
 ***
