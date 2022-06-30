@@ -26,7 +26,7 @@ Source can be run in Python with the following third-party libraries installed.
 ***
 ## Compiling from source (Windows)
 
-1. Install latest version of miniconda.
+1. Install latest version of miniconda (https://docs.conda.io/en/latest/miniconda.html#windows-installers).
 2. Run the following:
 ```
 mkdir Source
