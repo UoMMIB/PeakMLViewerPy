@@ -143,7 +143,14 @@ This is the process to use the application with Integrated Probabilistic Analysi
 IPA is described in this paper:
 Francesco Del Carratore, Kamila Schmidt, Maria Vinaixa, Katherine A Hollywood, Caitlin Greenland-Bews, Eriko Takano, Simon Rogers, and Rainer Breitling. Integrated Probabilistic Annotation: A Bayesian-Based Annotation Method for Metabolomic Profiles Integrating Biochemical Connections, Isotope Patterns, and Adduct Relationships. Analytical Chemistry, 91(20):12799–12807, 2019. ISSN 15206882. doi:10.1021/acs.analchem.9b02354.
 
-With the source available here:
+# Integration with ipaPy2 library (Recommended)
+The latest implementation of the IPA method can be found here:
+https://github.com/francescodc87/ipaPy2
+
+
+
+# Integration with the IPA R package (Deprecated)
+The first implementation of the IPA method was developed as an R package and it can be found here:
 https://github.com/francescodc87/IPA
 
 The PeakMLViewerPy application has two methods for integrating with this process.
