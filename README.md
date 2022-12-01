@@ -149,7 +149,7 @@ https://github.com/francescodc87/ipaPy2
 
 The ipaPy2 library is able to work directly with .peakml files and to write the obtained IPA annotations to the .peakml files.
 A detailed explanation can be found here:
-https://github.com/francescodc87/IPA
+https://github.com/francescodc87/ipaPy2/blob/main/Integration_with_mzMatch.ipynb
 
 ### Integration with the IPA R package (Deprecated)
 The first implementation of the IPA method was developed as an R package and it can be found here:
