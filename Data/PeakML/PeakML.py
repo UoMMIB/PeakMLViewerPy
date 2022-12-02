@@ -3,6 +3,7 @@ from Data.PeakML.Header import Header
 
 import IO.PeakMLIO as PeakMLIO
 import IO.IPAIO as IPAIO
+import IO.IPAV2IO as IPAV2IO
 
 import Logger as lg
 import gzip
@@ -115,6 +116,28 @@ class PeakML():
             return True
         except Exception as err:
             lg.log_error(f'Unable to convert file to PeakML class stucture: {err}')
+        
+        return success
+
+    def generate_ipa_annotations(self, import_peakml_filename) -> bool:
+
+        success = False
+
+        try:
+            lg.log_error("D")
+            temp_filepath_for_annotation = import_peakml_filename
+            #Write IPA file to temporary location
+            self.export(temp_filepath_for_annotation)
+            lg.log_error("E")
+            #Update annotations for file
+            IPAV2IO.generate_ipa_annotation(temp_filepath_for_annotation)
+            lg.log_error("F")
+            #Import updated local file.
+            self.import_from_file(temp_filepath_for_annotation)
+            lg.log_error("G")
+            return True
+        except Exception as err:
+            lg.log_error(f'Unable to add IPA annotations to PeakML class stucture: {err}')
         
         return success
     

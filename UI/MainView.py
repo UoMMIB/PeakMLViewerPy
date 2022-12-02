@@ -369,7 +369,8 @@ class MainView():
         self.ipamenu = tk.Menu(self.menubar, tearoff=0)
         self.ipamenu.add_command(label="Export entries as IPA input", command=self.export_ipa_file)
         self.ipamenu.add_command(label="Import IPA results", command=self.import_ipa_file)
-
+        self.ipamenu.add_separator()
+        self.ipamenu.add_command(label="Run annotation", command=self.generate_annotation)
         self.menubar.add_cascade(label="IPA", menu=self.ipamenu)
 
         # Add 'User' menu item
@@ -932,6 +933,23 @@ class MainView():
 
         p.update_progress("IPA data imported.", 100)
 
+    def generate_annotation_for_peakml(self):
+        p.update_progress("Running annotation", 0)
+
+        try:
+            # Load data objects
+            self.data.generate_annotation_with_ipav2()
+
+            # Update UI widgets
+            self.load_data_from_views()
+
+        except Exception as err:
+            self.handle_error("Unable to annotate current PeakML.", err)
+
+            p.update_progress("Completed", 100)
+
+        p.update_progress("IPA annotation complete.", 100)
+
     def export_peakml_file(self):
         p.update_progress("Exporting file", 0)
 
@@ -1012,6 +1030,18 @@ class MainView():
             self.handle_error("Unable to open IPA file.", ioerr)
         except Exception as err:
             self.handle_error("Unable to open IPA file.", err)
+
+    def generate_annotation(self):
+        try:
+        #    ipa_filepath = fd.askopenfilename(defaultextension=".Rdata")
+        #    if ipa_filepath:
+        #        self.data.import_ipa_filepath = ipa_filepath
+
+            self.run_process_with_progress(self.generate_annotation_for_peakml)
+        #except IOError as ioerr:
+        #    self.handle_error("Unable to open IPA file.", ioerr)
+        except Exception as err:
+            self.handle_error("Unable to annotate.", err)
 
     def export_ipa_file(self):
         try:

@@ -263,6 +263,30 @@ class DataAccess:
     #    except Exception as err:
     #        lg.log_error(f'An error when importing IPA data: {err}')
 
+
+    def generate_annotation_with_ipav2(self):
+
+        try:
+            lg.log_error("H")
+            p.update_progress("Annotating.", 5)
+            self._peakml.generate_ipa_annotations(self.import_peakml_filename)
+            lg.log_error("I")
+            p.update_progress("Loading view data.", 20)
+            self._load_view_data_from_peakml()
+            lg.log_error("J")
+            self._ipa_imported = True
+            self._prior_probabilities_modified = False
+
+        except Exception as err:
+            lg.log_error(f'An error when importing IPA data: {err}')
+
+    #def import_fragment_databases(self):
+    #    try:
+            self.fragment_id_db, self.fragment_id_samples = MolIO.load_fragment_databases()
+            
+    #    except Exception as err:
+    #        lg.log_error(f'An error when importing IPA data: {err}')
+
     # Load view data from peakml object
     def _load_view_data_from_peakml(self):
 
