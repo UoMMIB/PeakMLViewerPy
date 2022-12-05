@@ -361,7 +361,7 @@ class DataAccess:
             self._polt_frag_view.load_plot_data_for_selected_peak(selected_peak, self._peakml.header, self._measurement_colours)
             lg.log_progress("Fragmentation view data loaded.")
 
-
+            self._
 
         except Exception as err:
             lg.log_error(f'An error when loading selected entry data: {err}')
