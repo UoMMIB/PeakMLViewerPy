@@ -2,6 +2,7 @@ from Data.Filter.BaseFilter import BaseFilter
 from Data.PeakML.Peak import Peak
 from Data.PeakML.PeakML import PeakML
 from Data.Settings import Settings
+from Data.IPAParams import IPAParams
 from Data.View.EntryDataView import EntryDataView
 from Data.View.FilterDataView import FilterDataView
 from Data.View.PlotPeakDataView import PlotPeakDataView
@@ -40,6 +41,10 @@ class DataAccess:
     @property
     def settings(self) -> Settings:
         return self._settings
+
+    @property
+    def ipa_params(self) -> IPAParams:
+        return self._ipa_params
 
     @property
     def entry_view_dataframe(self) -> pd.DataFrame:
@@ -206,6 +211,7 @@ class DataAccess:
         self._fragment_id_db, self._fragment_id_samples = MolIO.load_fragment_databases()
         settings_io = SetIO.load_database_paths()
         self._settings = Settings(SetIO.load_preferences(), settings_io[0], settings_io[1], settings_io[2])
+        self._ipa_params = IPAParams()
 
         self._filters = []
         self._measurement_colours = {}
@@ -267,13 +273,12 @@ class DataAccess:
     def generate_annotation_with_ipav2(self):
 
         try:
-            lg.log_error("H")
             p.update_progress("Annotating.", 5)
-            self._peakml.generate_ipa_annotations(self.import_peakml_filename)
-            lg.log_error("I")
+            self._peakml.generate_ipa_annotations(self.ipa_params)
+
             p.update_progress("Loading view data.", 20)
             self._load_view_data_from_peakml()
-            lg.log_error("J")
+
             self._ipa_imported = True
             self._prior_probabilities_modified = False
 
@@ -736,3 +741,28 @@ class DataAccess:
         SetIO.write_settings(self.settings)
 
 #endregion
+
+    def update_ipa_params(self, ionisation: int, ppm: int, noits: int, burn: int, delta_add: int, delta_bio: int, mode: str, CSunk: float, ncores: int, isodiff: int, ppmiso: int, me: float, ratiosd: float, ppmunk: str, ratiounk: str, ppmthr: str, pRTNone: str, pRTout: str, mzdCS: int, ppmCS: int, evfilt: bool, connections: List[str]):
+        self.ipa_params.ionisation = ionisation
+        self.ipa_params.ppm = ppm
+        self.ipa_params.noits = noits
+        self.ipa_params.burn = burn
+        self.ipa_params.delta_add = delta_add
+        self.ipa_params.delta_bio = delta_bio
+        self.ipa_params.mode = mode
+        self.ipa_params.CSunk = CSunk
+        self.ipa_params.ncores = ncores
+
+        self.ipa_params.isodiff = isodiff
+        self.ipa_params.ppmiso = ppmiso
+        self.ipa_params.me = me
+        self.ipa_params.ratiosd = ratiosd
+        self.ipa_params.ppmunk = ppmunk
+        self.ipa_params.ratiounk = ratiounk
+        self.ipa_params.ppmthr = ppmthr
+        self.ipa_params.pRTNone = pRTNone
+        self.ipa_params.pRTout = pRTout
+        self.ipa_params.mzdCS = mzdCS 
+        self.ipa_params.ppmCS = ppmCS
+        self.ipa_params.evfilt = evfilt
+        self.ipa_params.connections = connections

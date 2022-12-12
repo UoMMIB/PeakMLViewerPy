@@ -5,6 +5,7 @@ import pickle
 
 import Logger as lg
 from Data.PeakML.Annotation import Annotation
+from Data.IPAParams import IPAParams
 from Data.PeakML.Peak import Peak
 
 from typing import Dict
@@ -35,7 +36,6 @@ def update_peak_with_annotations(peakml_peaks: Dict[str, Peak], annot_dict: Dict
 #       'post Gibbs', 'chi-square pval']
 
         for peak_key in peakml_peaks.keys():
-            # lg.log_error(peak_key)
             peak = peakml_peaks[peak_key]
             id = peak.get_specific_annotation('id')
             # lg.log_error("Peak_Key")
@@ -216,195 +216,123 @@ def update_annotation(parent, ann_label, ann_value):
     else:
         parent.add_annotation(Annotation("", "", ann_label, ann_value, "STRING"))
 
-def generate_ipa_annotation(peakml_peaks):
+def generate_ipa_annotation(peakml_peaks, params):
 
     #anno = pd.read_pickle('ipa_annotations.pickle')
 
     # Ionisation (Positive = 1, Negative = -1)
-    ionisation_val = 1
+    # ionisation_val = 1
 
     peakml_df = generate_ipa_input(list(peakml_peaks.values()))
     #lg.log_error(peakml_df.head())
 
-    anno = run_ipa_simple(peakml_df)
+    anno = run_ipa(peakml_df, params)
 
     #lg.log_error(anno[1].columns)
     update_peak_with_annotations(peakml_peaks, anno)
 
-# Uses MS1 and MS2, does not use Gibbs sampler
-def run_whole_scenario_one(peakml_df, ms1_db, adducts_db, ms2_db, ms2_df):  
-    annotations = ipa.simpleIPA( peakml_df,
-                                 ionisation = 1, 
-                                 DB = ms1_db,
-                                 adductsAll = adducts_db,
-                                 ppm = 3,
-                                 dfMS2 = ms2_df,
-                                 DBMS2 = ms2_db,
-                                 noits = 5000,
-                                 delta_add = 0.1)
-    return annotations
-
-# Use only MS1, considers adduct connections in the Gibbs sampler
-def run_whole_scenario_two(peakml_df, ms1_db, adducts_db):  
-    annotations = ipa.simpleIPA( peakml_df,
-                                 ionisation = 1, 
-                                 DB = ms1_db,
-                                 adductsAll = adducts_db,
-                                 ppm = 3,
-                                 noits = 5000,
-                                 delta_add = 0.1)
-    return annotations
-
-# Uses MS1 and MS2, considers both adducts and biochemical connections in the Gibbs sampler.
-def run_whole_scenario_three(peakml_df, ms1_db, adducts_db, allbioreactions_db):  
-    annotations= ipa.simpleIPA( peakml_df, 
-                                ionisation=1, 
-                                DB = ms1_db,
-                                adductsAll = adducts_db,
-                                ppm = 3,
-                                dfMS2 = dfMS2,
-                                DBMS2 = DBMS2,
-                                noits = 5000,
-                                Bio = allbioreactions_db,
-                                delta_add = 0.1, 
-                                delta_bio = 0.4)
-    return annotations
-
-
-def run_ipa_simple(peakml_df):
+def run_ipa(peakml_df: pd.DataFrame, params: IPAParams):
     ms1_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","IPA_MS1.csv"))
     adducts_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","adducts.csv"))
     allbioreactions_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","allBIO_reactions.csv"))
+    ms2_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","IPA_MS2_QTOF6550.csv"))
+    dbms2_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","DBMS2_test_pos.csv"))
 
-    annotations = ipa.simpleIPA(df=peakml_df,
-                                ionisation=1,
-                                DB=ms1_db,
-                                adductsAll=adducts_db,
-                                ppm=3,
-                                ppmthr=5,
-                                Bio=allbioreactions_db,
-                                delta_add=0.1,
-                                delta_bio=0.1,
-                                burn=1000,
-                                noits=5000,
-                                ncores=70)
+    map_isotope_patterns(peakml_df, params)
 
-    return annotations
-#     df=peakml_df,
-#                                 ionisation=1,
-#                                 DB=ms1_db,
-#                                 adductsAll=adducts_db,
-#                                 ppm=3,
-#                                 ppmthr=5,
-#                                 Bio=allbioreactions_db,
-#                                 delta_add=0.1,
-#                                 delta_bio=0.1,
-#                                 burn=1000,
-#                                 noits=5000,
-#                                 ncores=70)
+    computed_adducts = run_adducts(params, ms1_db, adducts_db)
 
-#    run_ipa()
+    annotation_priors = run_priors(peakml_df, params, computed_adducts, ms2_db, dbms2_db)
 
-#def run_ipa(peakml_df: pd.DataFrame ):
+    if (allbioreactions_db is None):
+        bio_matrix = run_bio_matrix(annotation_priors, params, ms1_db, allbioreactions_db)
+    else:
+        bio_matrix = allbioreactions_db
 
-#     ms1_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","IPA_MS1.csv"))
-#     adducts_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","adducts.csv"))
-#     allbioreactions_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","allBIO_reactions.csv"))
+    run_gibbs_sampler(peakml_df, params, annotation_priors, bio_matrix)
 
+def map_isotope_patterns(peakml_df: pd.DataFrame, params: IPAParams):
+    # Mapping isotope patterns (Output: relationship, isotope pattern, charge)
+    ipa.map_isotope_patterns(peakml_df, 
+                            isoDiff = params.isodiff, 
+                            ppm = params.ppmiso, 
+                            ionisation = params.ionisation)
 
-#             (df,
-#             ionisation,
-#             DB,
-#             adductsAll,
-#             ppm,
-#             dfMS2 = None,
-#             DBMS2 = None,
-#             noits = 100,
-#             burn = None,
-#             delta_add=None,
-#             delta_bio=None,
-#             Bio=None,
-#             mode='reactions',
-#             CSunk=0.5,
-#             isodiff=1,
-#             ppmiso=100,
-#             ncores=1,
-#             me=5.48579909065e-04,
-#             ratiosd=0.9,
-#             ppmunk=None,
-#             ratiounk=None,
-#             ppmthr=None,
-#             pRTNone=None,
-#             pRTout=None,
-#             mzdCS=0, 
-#             ppmCS=10,
-#             evfilt=False,
-#             connections = ["C3H5NO", "C6H12N4O", "C4H6N2O2", "C4H5NO3",
-#                              "C3H5NOS", "C6H10N2O3S2","C5H7NO3","C5H8N2O2",
-#                              "C2H3NO","C6H7N3O","C6H11NO","C6H11NO","C6H12N2O",
-#                              "C5H9NOS","C9H9NO","C5H7NO","C3H5NO2","C4H7NO2",
-#                              "C11H10N2O","C9H9NO2","C5H9NO","C4H4O2","C3H5O",
-#                              "C10H12N5O6P","C10H15N2O3S","C10H14N2O2S","CH2ON",
-#                              "C21H34N7O16P3S","C21H33N7O15P3S","C10H15N3O5S",
-#                              "C5H7","C3H2O3","C16H30O","C8H8NO5P","CH3N2O",
-#                              "C5H4N5","C10H11N5O3","C10H13N5O9P2",
-#                              "C10H12N5O6P","C9H13N3O10P2","C9H12N3O7P",
-#                              "C4H4N3O","C10H13N5O10P2","C10H12N5O7P","C5H4N5O",
-#                              "C10H11N5O4","C10H14N2O10P2","C10H12N2O4",
-#                              "C5H5N2O2","C10H13N2O7P","C9H12N2O11P2",
-#                              "C9H11N2O8P","C4H3N2O2","C9H10N2O5","C2H3O2",
-#                              "C2H2O","C2H2","CO2","CHO2","H2O","H3O6P2","C2H4",
-#                              "CO","C2O2","H2","O","P","C2H2O","CH2","HPO3",
-#                              "NH2","PP","NH","SO3","N","C6H10O5",
-#                "C6H10O6","C5H8O4","C12H20O11","C6H11O8P","C6H8O6","C6H10O5",
-#                "C18H30O15"]):
+def run_adducts(params: IPAParams, ms1_db: pd.DataFrame, adducts_db: pd.DataFrame):    
+    # computing all adducts
+    computed_adducts = ipa.compute_all_adducts(adductsAll = adducts_db, 
+                                        DB = ms1_db, 
+                                        ionisation = params.ionisation,
+                                        ncores = params.ncores)
+    return computed_adducts
 
-#     # Mapping isotope patterns (Output: relationship, isotope pattern, charge)
-#     #isotope_patterns = ipa.map_isotope_patterns(peakml_df, ionisation_val)
+def run_priors(peakml_df: pd.DataFrame, params: IPAParams, computed_adducts: pd.DataFrame, ms2_db: pd.DataFrame, dbms2_db: pd.DataFrame):
+    # computing priors
+    if (ms2_db is None) or (dbms2_db is None):
+        annotation_priors = ipa.MS1annotation(df = peakml_df,
+                                        allAdds = computed_adducts,
+                                        ppm = params.ppm,
+                                        me = params.me,
+                                        ratiosd = params.ratiosd,
+                                        ppmunk = params.ppmunk,
+                                        ratiounk = params.ratiounk,
+                                        ppmthr = params.ppmthr,
+                                        pRTNone = params.pRTNone,
+                                        pRTout = params.pRTout,
+                                        ncores = params.ncores)
+    else:
+        annotation_priors = ipa.MSMSannotation(df = peakml_df,
+                                        dfMS2 = ms2_db,
+                                        allAdds = computed_adducts,
+                                        DBMS2 = dbms2_db,
+                                        ppm = params.ppm,
+                                        me = params.me,
+                                        ratiosd = params.ratiosd,
+                                        ppmunk = params.ppmunk,
+                                        ratiounk = params.ratiounk,
+                                        ppmthr = params.ppmthr,
+                                        pRTNone = params.pRTNone,
+                                        pRTout = params.pRTout,
+                                        mzdCS = params.mzdCS,
+                                        ppmCS = params.ppmCS,
+                                        CSunk = params.CSunk,
+                                        evfilt = params.evfilt,
+                                        ncores=  params.ncores)
 
-#     # mapping isotopes
-#     ipa.map_isotope_patterns(peakml_df, 
-#                             isoDiff = isodiff_val, 
-#                             ppm = ppmiso_val, 
-#                             ionisation = ionisation_val)
-    
-#     # computing all adducts
-#     allAdds = ipa.compute_all_adducts(adductsAll = adducts_db, 
-#                                         DB = DB, 
-#                                         ionisation = ionisation_val,
-#                                         ncores = ncores_val)
-     
+    return annotation_priors
 
+# Computing posterior probabilities integrating biochemical connections
+def run_bio_matrix(annotations: pd.DataFrame, params: IPAParams, ms1_db: pd.DataFrame, allbioreactions_db: pd.DataFrame):
+    # computing Bio matrix (if necessary)
+    if (allbioreactions_db is None) and (params.delta_bio is not None):
+        computed_bio_matrix = ipa.Compute_Bio(DB = ms1_db,
+                                                annotations = annotations,
+                                                mode = params.mode,
+                                                connections = params.connections,
+                                                ncores = params.ncores)
 
-#     # computing priors
-#     if (dfMS2 is None) or (DBMS2 is None):
-#         annotations = ipa.MS1annotation(df = peakml_df,
-#                                         allAdds = allAdds,
-#                                         ppm = ppm,
-#                                         me = me,
-#                                         ratiosd = ratiosd,
-#                                         ppmunk = ppmunk,
-#                                         ratiounk = ratiounk,
-#                                         ppmthr = ppmthr,
-#                                         pRTNone = pRTNone,
-#                                         pRTout = pRTout,
-#                                         ncores = ncores)
-#     else:
-    
-#         annotations = MSMSannotation(df=peakml_df,dfMS2=dfMS2,allAdds=allAdds,DBMS2=DBMS2,ppm=ppm,me=me,ratiosd=ratiosd,
-#         ppmunk=ppmunk,ratiounk=ratiounk,ppmthr=ppmthr,pRTNone=pRTNone,pRTout=pRTout,mzdCS=mzdCS,ppmCS=ppmCS,
-#         CSunk=CSunk,evfilt=evfilt,ncores=ncores)
+    return computed_bio_matrix
 
-#     # computing Bio matrix (if necessary)
-#     if (Bio is None) and (delta_bio is not None):
-#         Bio=Compute_Bio(DB=DB,annotations=annotations,mode=mode,connections=connections,ncores=ncores)
-        
-    # Computing posterior probabilities integrating biochemical connections
-
-#     # Gibbs sampler (if needed). Which one based on the inputs
-#     if (Bio is not None) and (delta_bio is not None) and (delta_add is not None):
-#         Gibbs_sampler_bio_add(df=peakml_df,annotations=annotations,Bio=Bio,noits=noits,burn=burn,delta_bio=delta_bio,delta_add=delta_add)
-#     elif (Bio is not None) and (delta_bio is not None) and (delta_add is None):
-#         Gibbs_sampler_bio(df=peakml_df,annotations=annotations,Bio=Bio,noits=noits,burn=burn,delta_bio=delta_bio)
-#     elif (Bio is None) and (delta_bio is None) and (delta_add is not None):
-#         Gibbs_sampler_add(df=peakml_df,annotations=annotations,noits=noits,burn=burn,delta_add=delta_add)
+def run_gibbs_sampler(peakml_df: pd.DataFrame, params: IPAParams, annotations: pd.DataFrame, bio_matrix: pd.DataFrame):
+    # Gibbs sampler (if needed). Which one based on the inputs
+    if (bio_matrix is not None) and (params.delta_bio is not None) and (params.delta_add is not None):
+        ipa.Gibbs_sampler_bio_add(df = peakml_df,
+                                    annotations = annotations,
+                                    Bio = bio_matrix,
+                                    noits = params.noits,
+                                    burn = params.burn,
+                                    delta_bio = params.delta_bio,
+                                    delta_add = params.delta_add)
+    elif (bio_matrix is not None) and (params.delta_bio is not None) and (params.delta_add is None):
+        ipa.Gibbs_sampler_bio(df = peakml_df,
+                                annotations = annotations,
+                                Bio = bio_matrix,
+                                noits = params.noits,
+                                burn = params.burn,
+                                delta_bio = params.delta_bio)
+    elif (bio_matrix is None) and (params.delta_bio is None) and (params.delta_add is not None):
+        ipa.Gibbs_sampler_add(df=peakml_df,
+                                annotations = annotations,
+                                noits = params.noits,
+                                burn = params.burn,
+                                delta_add = params.delta_add)

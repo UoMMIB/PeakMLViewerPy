@@ -37,6 +37,7 @@ from UI.SortDialog import SortDialog
 from UI.SortTimeSeriesDialog import SortTimeSeriesDialog
 from UI.PreferencesDialog import PreferencesDialog
 from UI.PeakSplitDialog import PeakSplitDialog
+from UI.SetIPAParamsDialog import SetIPAParamsDialog
 from Data.PeakML.SampleFragmentsItem import SampleFragmentsItem
 from Data.PeakML.SampleFragmentsItem import ConsensusSpec
 from UI.FragmentComparisonDialog import FragmentComparisonDialog
@@ -370,7 +371,7 @@ class MainView():
         self.ipamenu.add_command(label="Export entries as IPA input", command=self.export_ipa_file)
         self.ipamenu.add_command(label="Import IPA results", command=self.import_ipa_file)
         self.ipamenu.add_separator()
-        self.ipamenu.add_command(label="Run annotation", command=self.generate_annotation)
+        self.ipamenu.add_command(label="Run annotation", command=self.open_set_ipa_params_dialog)
         self.menubar.add_cascade(label="IPA", menu=self.ipamenu)
 
         # Add 'User' menu item
@@ -1078,6 +1079,62 @@ class MainView():
             #self.update_fragmentation_dbs()
             self.data.import_fragment_databases()
 
+    
+    def open_set_ipa_params_dialog(self):
+        print("INPUTS")
+        print("ionistation: " + str(self.data.ipa_params.ionisation))
+        print("ppm: " + str(self.data.ipa_params.ppm))
+        print("noits: " + str(self.data.ipa_params.noits))
+        print("burn: " + str(self.data.ipa_params.burn))
+        print("delta_add: " + str(self.data.ipa_params.delta_add))
+        print("delta_bio: " + str(self.data.ipa_params.delta_bio))
+        print("mode: " + str(self.data.ipa_params.mode))
+        print("CSunk: " + str(self.data.ipa_params.CSunk))
+        print("ncores: " + str(self.data.ipa_params.ncores))
+
+        print("isodiff: " + str(self.data.ipa_params.isodiff))
+        print("ppmiso: " + str(self.data.ipa_params.ppmiso))
+        print("me: " + str(self.data.ipa_params.me))
+        print("ratiosd: " + str(self.data.ipa_params.ratiosd))
+        print("ppmunk: " + str(self.data.ipa_params.ppmunk))
+        print("ratiounk: " + str(self.data.ipa_params.ratiounk))
+        print("ppmthr: " + str(self.data.ipa_params.ppmthr))
+        print("pRTNone: " + str(self.data.ipa_params.pRTNone))
+        print("pRTout: " + str(self.data.ipa_params.pRTout))
+        print("mzdCS: " + str(self.data.ipa_params.mzdCS))
+        print("ppmCS: " + str(self.data.ipa_params.ppmCS))
+        print("evfilt: " + str(self.data.ipa_params.evfilt))
+        print("connections: " + str(self.data.ipa_params.connections))
+
+        dlg = SetIPAParamsDialog(self.root,"Set IPA Parameters", self.data.ipa_params)
+        if dlg.submit:
+            print("OUTPUTS")
+            print("ionistation: " + dlg.ionisation)
+            print("ppm: " + dlg.ppm)
+            print("noits: " + dlg.noits)
+            print("burn: " + dlg.burn)
+            print("delta_add: " + dlg.delta_add)
+            print("delta_bio: " + dlg.delta_bio)
+            print("mode: " + dlg.mode)
+            print("CSunk: " + dlg.CSunk)
+            print("ncores: " + dlg.ncores)
+
+            print("isodiff: " + dlg.isodiff)
+            print("ppmiso: " + dlg.ppmiso)
+            print("me: " + dlg.me)
+            print("ratiosd: " + dlg.ratiosd)
+            print("ppmunk: " + dlg.ppmunk)
+            print("ratiounk: " + dlg.ratiounk)
+            print("ppmthr: " + dlg.ppmthr)
+            print("pRTNone: " + dlg.pRTNone)
+            print("pRTout: " + dlg.pRTout)
+            print("mzdCS: " + dlg.mzdCS)
+            print("ppmCS: " + dlg.ppmCS)
+            print("evfilt: " + dlg.evfilt)
+            print("connections: " + dlg.connections)
+
+            #self.data.update_ipa_params(dlg.ionisation, dlg.ppm, dlg.noits, dlg.burn, dlg.delta_add, dlg.delta_bio, dlg.mode, dlg.CSunk, dlg.ncores, dlg.isodiff, dlg.ppmiso, dlg.me, dlg.ratiosd, dlg.ppmunk, dlg.ratiounk, dlg.ppmthr, dlg.pRTNone, dlg.pRTout, dlg.mzdCS, dlg.ppmCS, dlg.evfilt, dlg.connections)
+            #self.run_process_with_progress(self.generate_annotation_for_peakml)
 
     def open_log_dialog(self):
         LogDialog(self.root)

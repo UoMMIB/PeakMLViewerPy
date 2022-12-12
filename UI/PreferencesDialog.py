@@ -35,7 +35,7 @@ class PreferencesDialog(ViewerDialog):
         self._plot_options[e.Plot.FragmentationConsensus] = "Fragmentation:Consensus"
         self._plot_options[e.Plot.FragmentationSample] = "Fragmentation:Sample"
 
-        super().__init__(parent, title, width=500, height=280, take_focus=True, extendable=False)
+        super().__init__(parent, title, width=800, height=400, take_focus=True, extendable=False)
 
     def body(self, frame):
 
@@ -46,11 +46,16 @@ class PreferencesDialog(ViewerDialog):
         self.tab_databases = ttk.Frame(self.tabs_preferences)
         self.tab_fragmentation = ttk.Frame(self.tabs_preferences)
         self.tab_fragmentation_databases = ttk.Frame(self.tabs_preferences)
+        self.tab_fragmentation_databases = ttk.Frame(self.tabs_preferences)
+        self.tab_ipa_databases = ttk.Frame(self.tabs_preferences)
+        self.tab_ipa_parameters = ttk.Frame(self.tabs_preferences)
 
         self.tabs_preferences.add(self.tab_appearance, text = "Appearance")
         self.tabs_preferences.add(self.tab_databases, text = "Databases")
         self.tabs_preferences.add(self.tab_fragmentation, text = "Fragmentation")
-        self.tabs_preferences.add(self.tab_fragmentation_databases, text = "Fragmentation database")
+        self.tabs_preferences.add(self.tab_fragmentation_databases, text = "Fragmentation Databases")
+        self.tabs_preferences.add(self.tab_ipa_databases, text = "IPA Databases")
+        self.tabs_preferences.add(self.tab_ipa_parameters, text = "IPA Parameters")
         self.tabs_preferences.pack(expand = 1, fill = "both")
 
         # Appearance section
@@ -79,8 +84,6 @@ class PreferencesDialog(ViewerDialog):
 
         self.plot_opm = tk.OptionMenu(self.tab_appearance, self.plot_option_selected, *option_list)
         self.plot_opm.grid(row=1, column=1, padx=(2,2), pady=(2,2), sticky="NEWS")
-
-
 
         # Database section
         self.database_grid_frame = tk.Frame(self.tab_databases)
@@ -191,6 +194,14 @@ class PreferencesDialog(ViewerDialog):
 
         self.refresh_databases_grid()
 
+        # ipa params section
+        self.frag_thr = tk.StringVar(value=self.threshold)
+        self.frag_ppmSV = tk.StringVar(value=self.frag_ppm)
+        self.frag_absoluteSV = tk.StringVar(value=self.frag_absolute)
+        self.frag_optionSV = tk.StringVar(value=self.frag_option)
+        self.blank_optionSV = tk.StringVar(value=self.blank)
+
+        
 
     def refresh_databases_grid(self):
         self.database_tree.delete(*self.database_tree.get_children())

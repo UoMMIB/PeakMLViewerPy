@@ -119,38 +119,15 @@ class PeakML():
         
         return success
 
-    def generate_ipa_annotations(self, import_peakml_filename) -> bool:
+    def generate_ipa_annotations(self, ipa_params) -> bool:
 
         success = False
 
         try:
             lg.log_error("Start IPA generate")
-            IPAV2IO.generate_ipa_annotation(self.peaks)
+            IPAV2IO.generate_ipa_annotation(self.peaks, ipa_params)
             lg.log_error("End IPA generate")
 
-            # for peak in list(self.peaks.values()):
-
-            #     if peak.get_specific_annotation('id'):
-            #         lg.log_error(peak.get_specific_annotation('id').value)
-
-            #     if peak.get_specific_annotation('post'):
-            #         lg.log_error(peak.get_specific_annotation('post').value)
-
-            #     if peak.get_specific_annotation('post Gibbs'):
-            #         lg.log_error(peak.get_specific_annotation('post Gibbs').value)
-
-            # self.peaks = peakml_peaks_annotated
-
-            #temp_filepath_for_annotation = import_peakml_filename
-            #Write IPA file to temporary location
-            #self.export(temp_filepath_for_annotation)
-            #lg.log_error("E")
-            #Update annotations for file
-            
-            #lg.log_error("F")
-            #Import updated local file.
-            #self.import_from_file(temp_filepath_for_annotation)
-            #lg.log_error("G")
             return True
         except Exception as err:
             lg.log_error(f'Unable to add IPA annotations to PeakML class stucture: {err}')
