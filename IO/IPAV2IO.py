@@ -222,12 +222,12 @@ def generate_ipa_annotation(peakml_peaks, params):
 
     # Ionisation (Positive = 1, Negative = -1)
     # ionisation_val = 1
-
+    lg.log_error("A")
     peakml_df = generate_ipa_input(list(peakml_peaks.values()))
     #lg.log_error(peakml_df.head())
-
+    lg.log_error("B")
     anno = run_ipa(peakml_df, params)
-
+    lg.log_error("C")
     #lg.log_error(anno[1].columns)
     update_peak_with_annotations(peakml_peaks, anno)
 
@@ -237,22 +237,29 @@ def run_ipa(peakml_df: pd.DataFrame, params: IPAParams):
     allbioreactions_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","allBIO_reactions.csv"))
     ms2_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","IPA_MS2_QTOF6550.csv"))
     dbms2_db = pd.read_csv(os.path.join(lg.current_directory,"IPADatabases","DBMS2_test_pos.csv"))
-
+    lg.log_error("D1")
     map_isotope_patterns(peakml_df, params)
-
+    lg.log_error("D2")
     computed_adducts = run_adducts(params, ms1_db, adducts_db)
-
+    lg.log_error("D3")
     annotation_priors = run_priors(peakml_df, params, computed_adducts, ms2_db, dbms2_db)
-
+    lg.log_error("D4")
     if (allbioreactions_db is None):
         bio_matrix = run_bio_matrix(annotation_priors, params, ms1_db, allbioreactions_db)
     else:
         bio_matrix = allbioreactions_db
-
+    lg.log_error("D5")
     run_gibbs_sampler(peakml_df, params, annotation_priors, bio_matrix)
+    lg.log_error("D6")
 
 def map_isotope_patterns(peakml_df: pd.DataFrame, params: IPAParams):
     # Mapping isotope patterns (Output: relationship, isotope pattern, charge)
+
+    lg.log_error(peakml_df.head())
+    lg.log_error(params.isodiff)
+    lg.log_error(params.ppmiso)
+    lg.log_error(params.ionisation)
+
     ipa.map_isotope_patterns(peakml_df, 
                             isoDiff = params.isodiff, 
                             ppm = params.ppmiso, 

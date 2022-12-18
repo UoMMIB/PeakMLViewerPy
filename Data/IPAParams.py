@@ -157,7 +157,7 @@ class IPAParams:
     # accurate mass of the electron. Default 5.48579909065e-04
     @property
     def me(self) -> float:
-        return self._ncores
+        return self._me
 
     @me.setter
     def me(self, me: float):
@@ -265,6 +265,6 @@ class IPAParams:
     def connections(self) -> List[str]:
         return self._connections
 
-    @evfilt.setter
+    @connections.setter
     def connections(self, connections: List[str]):
         self._connections = connections

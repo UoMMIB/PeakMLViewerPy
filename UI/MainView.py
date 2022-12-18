@@ -942,7 +942,7 @@ class MainView():
             self.data.generate_annotation_with_ipav2()
 
             # Update UI widgets
-            self.load_data_from_views()
+            # self.load_data_from_views()
 
         except Exception as err:
             self.handle_error("Unable to annotate current PeakML.", err)
@@ -1104,7 +1104,7 @@ class MainView():
         print("mzdCS: " + str(self.data.ipa_params.mzdCS))
         print("ppmCS: " + str(self.data.ipa_params.ppmCS))
         print("evfilt: " + str(self.data.ipa_params.evfilt))
-        print("connections: " + str(self.data.ipa_params.connections))
+        print("connections: " + ", ".join(str(val) for val in self.data.ipa_params.connections))
 
         dlg = SetIPAParamsDialog(self.root,"Set IPA Parameters", self.data.ipa_params)
         if dlg.submit:
@@ -1121,20 +1121,41 @@ class MainView():
 
             print("isodiff: " + dlg.isodiff)
             print("ppmiso: " + dlg.ppmiso)
-            print("me: " + dlg.me)
+            print("me: " + str(dlg.me))
             print("ratiosd: " + dlg.ratiosd)
-            print("ppmunk: " + dlg.ppmunk)
-            print("ratiounk: " + dlg.ratiounk)
-            print("ppmthr: " + dlg.ppmthr)
-            print("pRTNone: " + dlg.pRTNone)
-            print("pRTout: " + dlg.pRTout)
+
+            if dlg.ppmunk:
+                print("ppmunk: " + dlg.ppmunk)
+            else:
+                print("ppmunk: " + "None")
+
+            if dlg.ratiounk:
+                print("ratiounk: " + dlg.ratiounk)
+            else:
+                print("ratiounk: " + "None")
+
+            if dlg.ppmthr:
+                print("ppmthr: " + dlg.ppmthr)
+            else:
+                print("ppmthr: " + "None")
+
+            if dlg.pRTNone:
+                print("pRTNone: " + dlg.pRTNone)
+            else:
+                print("pRTNone: " + "None")
+
+            if dlg.pRTout:
+                print("pRTout: " + dlg.pRTout)
+            else:
+                print("pRTout: " + "None")
+
             print("mzdCS: " + dlg.mzdCS)
             print("ppmCS: " + dlg.ppmCS)
             print("evfilt: " + dlg.evfilt)
-            print("connections: " + dlg.connections)
+            print("connections: " + ", ".join(str(val) for val in dlg.connections))
 
-            #self.data.update_ipa_params(dlg.ionisation, dlg.ppm, dlg.noits, dlg.burn, dlg.delta_add, dlg.delta_bio, dlg.mode, dlg.CSunk, dlg.ncores, dlg.isodiff, dlg.ppmiso, dlg.me, dlg.ratiosd, dlg.ppmunk, dlg.ratiounk, dlg.ppmthr, dlg.pRTNone, dlg.pRTout, dlg.mzdCS, dlg.ppmCS, dlg.evfilt, dlg.connections)
-            #self.run_process_with_progress(self.generate_annotation_for_peakml)
+            self.data.update_ipa_params(dlg.ionisation, dlg.ppm, dlg.noits, dlg.burn, dlg.delta_add, dlg.delta_bio, dlg.mode, dlg.CSunk, dlg.ncores, dlg.isodiff, dlg.ppmiso, dlg.me, dlg.ratiosd, dlg.ppmunk, dlg.ratiounk, dlg.ppmthr, dlg.pRTNone, dlg.pRTout, dlg.mzdCS, dlg.ppmCS, dlg.evfilt, dlg.connections)
+            self.run_process_with_progress(self.generate_annotation_for_peakml)
 
     def open_log_dialog(self):
         LogDialog(self.root)
