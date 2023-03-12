@@ -214,14 +214,9 @@ def run_adducts(params: IPAParams, ms1_db: pd.DataFrame, adducts_db: pd.DataFram
 
 def run_priors(peakml_df: pd.DataFrame, params: IPAParams, computed_adducts: pd.DataFrame, ms2_db: pd.DataFrame, dbms2_db: pd.DataFrame):
 
-    lg.log_error("run_priors start")
-
     # computing priors
     if (ms2_db is None) or (dbms2_db is None):
-
-        lg.log_error("run_priors ms1")
-
-        annotation_priors = MS1annotation(df = peakml_df,
+        annotation_priors = ipa.MS1annotation(df = peakml_df,
                                         allAdds = computed_adducts,
                                         ppm = params.ppm,
                                         me = params.me,
@@ -233,10 +228,7 @@ def run_priors(peakml_df: pd.DataFrame, params: IPAParams, computed_adducts: pd.
                                         pRTout = params.pRTout,
                                         ncores = params.ncores)
     else:
-
-        lg.log_error("run_priors msms")
-
-        annotation_priors = MSMSannotation(df = peakml_df,
+        annotation_priors = ipa.MSMSannotation(df = peakml_df,
                                         dfMS2 = ms2_db,
                                         allAdds = computed_adducts,
                                         DBMS2 = dbms2_db,
@@ -253,8 +245,6 @@ def run_priors(peakml_df: pd.DataFrame, params: IPAParams, computed_adducts: pd.
                                         CSunk = params.CSunk,
                                         evfilt = params.evfilt,
                                         ncores=  params.ncores)
-
-    lg.log_error("run_priors end")
 
     return annotation_priors
 
