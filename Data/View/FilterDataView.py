@@ -5,6 +5,8 @@ from Data.View.FilterItem import FilterItem
 from Data.Filter.BaseFilter import BaseFilter
 
 from typing import List
+import pandas as pd
+
 class FilterDataView(BaseDataView):
     def __init__(self):
         super().__init__(['ID','Type','Settings'])
@@ -27,14 +29,15 @@ class FilterDataView(BaseDataView):
         self.clear_dataframe()
 
         if len(self.datalist) > 0:
-            for item in self.datalist:
-                self.dataframe = self.dataframe.append({
-                                                        "UID": item.uid,
-                                                        "Type": item.type,
-                                                        "Settings": item.settings,
-                                                        "Selected": item.selected,
-                                                        "Checked": item.checked,
-                                                    }, ignore_index=True)
+            for item in self.datalist:    
+                dr = pd.DataFrame({
+                    "UID": item.uid,
+                    "Type": item.type,
+                    "Settings": item.settings,
+                    "Selected": item.selected,
+                    "Checked": item.checked,
+                    }, index=[0])
+                self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)
 
             # If no items are selected,                                        
             if len(self.dataframe.loc[self.dataframe["Selected"] == True]) == 0:

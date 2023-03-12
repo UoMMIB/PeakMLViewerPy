@@ -1,5 +1,6 @@
 import Utilities as u
 import Logger as lg
+import pandas as pd
 
 from Data.View.BaseDataView import BaseDataView
 from Data.View.IdentificationItem import IdentificationItem
@@ -336,11 +337,8 @@ class IdentificationDataView(BaseDataView):
             lg.log_error(f'Unable to load identification data from peakML object: {err}')
 
 
-
-
     def add_item(self, id: int, formula: str, ppm: float, adduct: str, name: str, class_desc: str, description: str, prior: float, post: float, smiles: str, inchi: str, notes: str, IPA_id: str, IPA_name: str, IPA_formula: str, IPA_adduct: str, IPA_mz: str, IPA_charge: str, IPA_ppm: str, IPA_isotope_pattern_score: str, IPA_fragmentation_pattern_score: str, IPA_prior: str, IPA_post: str, IPA_post_Gibbs: str, IPA_post_chi_square_pval: str, IPA_smiles: str, IPA_inchi: str):
         self.datalist.append(IdentificationItem(id, formula, ppm, adduct, name, class_desc, description, prior, post, smiles, inchi, notes, IPA_id, IPA_name, IPA_formula, IPA_adduct, IPA_mz, IPA_charge, IPA_ppm, IPA_isotope_pattern_score, IPA_fragmentation_pattern_score, IPA_prior, IPA_post, IPA_post_Gibbs, IPA_post_chi_square_pval, IPA_smiles, IPA_inchi))
-
 
 
     def sort_datalist_by_probabilities(self):
@@ -357,44 +355,45 @@ class IdentificationDataView(BaseDataView):
 
         if len(self.datalist) > 0:
             for item in self.datalist:
-                self.dataframe = self.dataframe.append({
-                                                        "UID": item.uid,
-                                                        "ID": item.id,
-                                                        "Formula": item.formula,
-                                                        "PPM": item.ppm,
-                                                        "Adduct": item.adduct,
-                                                        "Name": item.name,
-                                                        "Class": item.class_desc,
-                                                        "Description": item.description,
-                                                        "Prior": round(item.prior,2) if item.prior is not None and item.prior != "" and item.prior != "None" else "",
-                                                        "Post": round(item.post,2) if item.post is not None and item.post != "" and item.post != "None" else "",
-                                                        "Smiles": item.smiles,
-                                                        "InChi": item.inchi,
-                                                        "Notes": item.notes,
-                                                        "IPA_id": item.IPA_id,
-                                                        "IPA_name": item.IPA_name,
-                                                        "IPA_formula": item.IPA_formula,
-                                                        "IPA_adduct": item.IPA_adduct,
-                                                        "IPA_mz": round(float(item.IPA_mz),3) if item.IPA_mz is not None and item.IPA_mz != "" and item.IPA_mz != "None" else "",
-                                                        "IPA_charge": item.IPA_charge,
-                                                        "IPA_ppm": round(float(item.IPA_ppm),3) if item.IPA_ppm is not None and item.IPA_ppm != "" and item.IPA_ppm != "None" else "",
-                                                        "IPA_isotope_pattern_score": round(float(item.IPA_isotope_pattern_score),5) if item.IPA_isotope_pattern_score is not None and item.IPA_isotope_pattern_score != "" and item.IPA_isotope_pattern_score != "None" else "",
-                                                        "IPA_fragmentation_pattern_score": round(float(item.IPA_fragmentation_pattern_score),5) if item.IPA_fragmentation_pattern_score is not None and item.IPA_fragmentation_pattern_score != "" and item.IPA_fragmentation_pattern_score != "None" else "",
-                                                        "IPA_prior": round(float(item.IPA_prior),3) if item.IPA_prior is not None and item.IPA_prior != "" and item.IPA_prior != "None" else "",
-                                                        "IPA_post": round(float(item.IPA_post),3) if item.IPA_post is not None and item.IPA_post != "" and item.IPA_post != "None" else "",
-                                                        "IPA_post_Gibbs": round(float(item.IPA_post_Gibbs),3) if item.IPA_post_Gibbs is not None and item.IPA_post_Gibbs != "" and item.IPA_post_Gibbs != "None" else "",
-                                                        "IPA_post_chi_square_pval": round(float(item.IPA_post_chi_square_pval),3) if item.IPA_post_chi_square_pval is not None and item.IPA_post_chi_square_pval != "" and item.IPA_post_chi_square_pval != "None" else "",
-                                                        "IPA_smiles": item.IPA_smiles,
-                                                        "IPA_inchi": item.IPA_inchi,
-                                                        "Selected": item.selected,
-                                                        "Checked": item.checked,
-                                                    }, ignore_index=True)
+                dr = pd.DataFrame({
+                                    "UID": item.uid,
+                                    "ID": item.id,
+                                    "Formula": item.formula,
+                                    "PPM": item.ppm,
+                                    "Adduct": item.adduct,
+                                    "Name": item.name,
+                                    "Class": item.class_desc,
+                                    "Description": item.description,
+                                    "Prior": round(item.prior,2) if item.prior is not None and item.prior != "" and item.prior != "None" else "",
+                                    "Post": round(item.post,2) if item.post is not None and item.post != "" and item.post != "None" else "",
+                                    "Smiles": item.smiles,
+                                    "InChi": item.inchi,
+                                    "Notes": item.notes,
+                                    "IPA_id": item.IPA_id,
+                                    "IPA_name": item.IPA_name,
+                                    "IPA_formula": item.IPA_formula,
+                                    "IPA_adduct": item.IPA_adduct,
+                                    "IPA_mz": round(float(item.IPA_mz),3) if item.IPA_mz is not None and item.IPA_mz != "" and item.IPA_mz != "None" else "",
+                                    "IPA_charge": item.IPA_charge,
+                                    "IPA_ppm": round(float(item.IPA_ppm),3) if item.IPA_ppm is not None and item.IPA_ppm != "" and item.IPA_ppm != "None" else "",
+                                    "IPA_isotope_pattern_score": round(float(item.IPA_isotope_pattern_score),5) if item.IPA_isotope_pattern_score is not None and item.IPA_isotope_pattern_score != "" and item.IPA_isotope_pattern_score != "None" else "",
+                                    "IPA_fragmentation_pattern_score": round(float(item.IPA_fragmentation_pattern_score),5) if item.IPA_fragmentation_pattern_score is not None and item.IPA_fragmentation_pattern_score != "" and item.IPA_fragmentation_pattern_score != "None" else "",
+                                    "IPA_prior": round(float(item.IPA_prior),3) if item.IPA_prior is not None and item.IPA_prior != "" and item.IPA_prior != "None" else "",
+                                    "IPA_post": round(float(item.IPA_post),3) if item.IPA_post is not None and item.IPA_post != "" and item.IPA_post != "None" else "",
+                                    "IPA_post_Gibbs": round(float(item.IPA_post_Gibbs),3) if item.IPA_post_Gibbs is not None and item.IPA_post_Gibbs != "" and item.IPA_post_Gibbs != "None" else "",
+                                    "IPA_post_chi_square_pval": round(float(item.IPA_post_chi_square_pval),3) if item.IPA_post_chi_square_pval is not None and item.IPA_post_chi_square_pval != "" and item.IPA_post_chi_square_pval != "None" else "",
+                                    "IPA_smiles": item.IPA_smiles,
+                                    "IPA_inchi": item.IPA_inchi,
+                                    "Selected": item.selected,
+                                    "Checked": item.checked,
+                                }, index=[0])
+                self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)
+
+
             # If no items are selected,
             if len(self.dataframe.loc[self.dataframe["Selected"] == True]) == 0:
                 # set the first one as selected.
                 self.dataframe.at[0, 'Selected'] = True
-
-
 
 
     def get_details(self, uid: str):

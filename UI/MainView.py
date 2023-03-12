@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.dates import DateFormatter
 
+import json
 import pandas as pd
 
 from PIL import ImageTk, Image
@@ -233,7 +234,16 @@ class MainView():
     def current_entry(self, current_entry: int):
         self._current_entry = current_entry
 
-    def __init__(self, data):
+    @property
+    def annotation_params_path(self) -> str:
+        return self._annotation_params_path
+
+    @annotation_params_path.setter
+    def annotation_params_path(self, annotation_params_path: str):
+        self._annotation_params_path = annotation_params_path
+
+
+    def __init__(self, data, peakml_file_path, annotation_params):
 
         self.data = data
 
@@ -247,6 +257,8 @@ class MainView():
 
         self.last_plot = ""
         self.frag_update = 0
+
+        self.annotation_params_path = ""
 
         #comparison database:
         #self.id_db = None
@@ -671,6 +683,22 @@ class MainView():
         #Set initial configure timer running.
         self.reset_configure_timer()
 
+        # If provided import annotation params file     
+        if annotation_params:
+            if os.path.exists(annotation_params):
+                self.annotation_params_path = annotation_params
+
+        # If provided import .peakml file
+        if peakml_file_path:
+            if os.path.exists(peakml_file_path):
+                try:
+                    self.data.import_peakml_filepath = peakml_file_path
+                    self.run_process_with_progress(self.import_peakml_file)
+                except IOError as ioerr:
+                    self.handle_error("Unable to open PeakML file.", ioerr)
+                except Exception as err:
+                    self.handle_error("Unable to open PeakML file.", err)
+
         # Run GUI until event occurs.
         self.root.mainloop()
 
@@ -908,6 +936,9 @@ class MainView():
             self.ipamenu.entryconfig(0, state=tk.NORMAL)
             self.ipamenu.entryconfig(1, state=tk.NORMAL)
 
+            if self.annotation_params_path:
+                self.import_ipa_annotations_file()
+
             # Update UI widgets
             self.load_data_from_views()
 
@@ -916,6 +947,48 @@ class MainView():
             p.update_progress("Completed", 100)
 
         p.update_progress("File imported.", 100)
+
+
+    def import_ipa_annotations_file(self):
+        p.update_progress("Applying annotation parameters", 0)
+        try:
+            # Load parameters from file
+            with open(self.annotation_params_path, "r") as ann_params:
+                ann = json.load(ann_params)
+            print(ann)
+            # Load data objects
+            self.data.update_ipa_params(
+                    ann["ionisation"], 
+                    ann["ppm"], 
+                    ann["noits"], 
+                    ann["burn"], 
+                    ann["delta_add"], 
+                    ann["delta_bio"], 
+                    ann["mode"], 
+                    ann["CSunk"], 
+                    ann["ncores"], 
+                    ann["isodiff"], 
+                    ann["ppmiso"], 
+                    ann["me"], 
+                    ann["ratiosd"], 
+                    ann["ppmunk"], 
+                    ann["ratiounk"], 
+                    ann["ppmthr"], 
+                    ann["pRTNone"], 
+                    ann["pRTout"], 
+                    ann["mzdCS"], 
+                    ann["ppmCS"], 
+                    ann["evfilt"], 
+                    ann["connections"])
+
+        except Exception as err:
+            self.handle_error("Unable to import annotation file.", err)
+
+            p.update_progress("Completed", 100)
+
+        # Generate annotation
+        self.generate_annotation_for_peakml()
+
 
     def import_ipa_rdata_file(self):
         p.update_progress("Importing IPA data", 0)
@@ -942,7 +1015,7 @@ class MainView():
             self.data.generate_annotation_with_ipav2()
 
             # Update UI widgets
-            # self.load_data_from_views()
+            self.load_data_from_views()
 
         except Exception as err:
             self.handle_error("Unable to annotate current PeakML.", err)
@@ -1570,14 +1643,18 @@ class MainView():
                     smiles_details = iden_row["Smiles"]
                     inchi_details = iden_row["InChi"]
 
-        if len(self.iden_tree.get_children()) > 0:
-            self.iden_edit_selected_btn["state"] = "normal"
-        else:
-            self.iden_edit_selected_btn["state"] = "disabled"
+        try:
+            if len(self.iden_tree.get_children()) > 0:
+                self.iden_edit_selected_btn["state"] = "normal"
+            else:
+                self.iden_edit_selected_btn["state"] = "disabled"
 
-        if self.data.check_if_any_checked_identifications():
-            self.iden_delete_checked_btn["state"] = "normal"
-        else:
+            if self.data.check_if_any_checked_identifications():
+                self.iden_delete_checked_btn["state"] = "normal"
+            else:
+                self.iden_delete_checked_btn["state"] = "disabled"
+        except:
+            self.iden_edit_selected_btn["state"] = "disabled"
             self.iden_delete_checked_btn["state"] = "disabled"
 
         #IPA tree

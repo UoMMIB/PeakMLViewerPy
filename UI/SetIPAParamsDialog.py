@@ -1,6 +1,11 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from UI.ViewerDialog import ViewerDialog
+import tkinter.filedialog as fd
+import tkinter.messagebox as mb
+import os
+import json
+import Logger as lg
 
 class SetIPAParamsDialog(ViewerDialog):
     def __init__(self, parent, title, ipaparams):
@@ -34,6 +39,9 @@ class SetIPAParamsDialog(ViewerDialog):
         # self.validate_notes_details = tk.StringVar()
         super().__init__(parent, title, width=700, height=500, take_focus=True, extendable=False)
 
+    def handle_error(self, error_message, error_details):
+        lg.log_error(f'{error_message}: {error_details}')
+        mb.showerror("Error", error_message)
 
     def body(self, frame: tk.Frame):
 
@@ -86,7 +94,7 @@ class SetIPAParamsDialog(ViewerDialog):
 
         self.lbl_burn = tk.Label(self.tab_ipa, width=40, text="Iterations to ignore when computing posterior:")
         self.lbl_burn.grid(row=3, column=0, padx=(2,2), pady=(5,5),sticky="NEWS")
-        self.spbx_burn = tk.Spinbox(self.tab_ipa, width=5, from_=0, to=1000000, state='readonly', textvariable=self.burnSV)
+        self.spbx_burn = tk.Spinbox(self.tab_ipa, width=5, from_=1, to=1000000, state='readonly', textvariable=self.burnSV)
         self.spbx_burn.grid(row=3, column=1, padx=(2,2), pady=(5,5),sticky="NEWS")
 
         self.lbl_delta_add = tk.Label(self.tab_ipa, width=40, text="Adducts weight when computing priors:")
@@ -96,7 +104,7 @@ class SetIPAParamsDialog(ViewerDialog):
 
         self.lbl_delta_bio = tk.Label(self.tab_ipa, width=40, text="Bio matrix weight when computing priors:")
         self.lbl_delta_bio.grid(row=5, column=0, padx=(2,2), pady=(5,5),sticky="NEWS")
-        self.spbx_delta_bio = tk.Spinbox(self.tab_ipa, width=5, from_=0, to=1000000, state='readonly', textvariable=self.deltabioSV)
+        self.spbx_delta_bio = tk.Spinbox(self.tab_ipa, width=5, from_=1, to=1000000, state='readonly', textvariable=self.deltabioSV)
         self.spbx_delta_bio.grid(row=5, column=1, padx=(2,2), pady=(5,5),sticky="NEWS")
 
         self.lbl_mode = tk.Label(self.tab_ipa, width=40, text="Mode:")
@@ -232,14 +240,100 @@ class SetIPAParamsDialog(ViewerDialog):
         self.btn_addnew = tk.Button(self.tab_connections, text='Add New', width=5, command=self.addnew_btn_clicked)
         self.btn_addnew.grid(row=1, column=2, padx=(2,2), pady=(5,5),sticky="NEWS")
 
-
     def buttonbox(self):
         self.btn_cancel = tk.Button(self, text='Cancel', width=5, command=self.cancel_btn_clicked)
         self.btn_cancel.pack(side="right", padx=(5,10), pady=(5,10))
         self.btn_ok = tk.Button(self, text='Run', width=5, command=self.run_btn_clicked)
         self.btn_ok.pack(side="right", padx=(5,10), pady=(5,10))
+        self.btn_export = tk.Button(self, text='Export parameters', width=12, command=self.export_btn_clicked)
+        self.btn_export.pack(side="left", padx=(5,10), pady=(5,10))
+        self.btn_import = tk.Button(self, text='Import parameters', width=12, command=self.import_btn_clicked)
+        self.btn_import.pack(side="left", padx=(5,10), pady=(5,10))
         self.bind("<Return>", lambda event: self.run_btn_clicked())
         self.bind("<Escape>", lambda event: self.cancel_btn_clicked())
+
+    def export_btn_clicked(self):
+        try:
+            filepath = fd.asksaveasfilename(defaultextension=".json")
+            if filepath:
+                with open(filepath, "w") as output_params:  
+                    output_params.write(json.dumps(self.export_params_file()))
+
+        except IOError as ioerr:
+            self.handle_error("Unable to save .json file.", ioerr)
+        except Exception as err:
+            self.handle_error("Unable to save .json file.", err)
+
+
+    def import_btn_clicked(self):
+        try:
+            filepath = fd.askopenfilename()
+            if filepath:
+                if os.path.exists(filepath):
+                    with open(filepath) as params_json:
+                        self.import_params_file(json.load(params_json))
+
+        except IOError as ioerr:
+            self.handle_error("Unable to open .json file.", ioerr)
+        except Exception as err:
+            self.handle_error("Unable to open .json file.", err)
+
+
+    def import_params_file(self, annotation_params):
+
+        self.ion_optionSV.set(annotation_params["ionisation"])
+        self.ppmSV.set(annotation_params["ppm"])
+        self.noitsSV.set(annotation_params["noits"])
+        self.burnSV.set(annotation_params["burn"])
+        self.deltaaddSV.set(annotation_params["delta_add"])
+        self.deltabioSV.set(annotation_params["delta_bio"])
+        self.mode_optionSV.set(annotation_params["mode"])
+        self.csunkSV.set(annotation_params["CSunk"])
+        self.ncoresSV.set(annotation_params["ncores"])
+        self.isodiffSV.set(annotation_params["isodiff"])
+        self.ppmisoSV.set(annotation_params["ppmiso"])
+        self.me = annotation_params["me"]
+        self.ratiosdSV.set(annotation_params["ratiosd"])
+        self.mzdCSSV.set(annotation_params["mzdCS"])
+        self.ppmCSSV.set(annotation_params["ppmCS"])
+        self.evfilt_optionSV.set(annotation_params["evfilt"])
+        self.ppmunkSV.set(annotation_params["ppmunk"])
+        self.ratiounkSV.set(annotation_params["ratiounk"])
+        self.ppmthrSV.set(annotation_params["ppmthr"])
+        self.pRTNoneSV.set(annotation_params["pRTNone"])
+        self.pRToutSV.set(annotation_params["pRTout"])
+        self.connections = annotation_params["connections"]
+
+    def export_params_file(self):
+        params = {}
+
+        # IPA Params
+        params["ionisation"] = self.ion_optionSV.get()
+        params["ppm"] = self.ppmSV.get()
+        params["noits"] = self.noitsSV.get()
+        params["burn"] = self.burnSV.get()
+        params["delta_add"] = self.deltaaddSV.get()
+        params["delta_bio"] = self.deltabioSV.get()
+        params["mode"] = self.mode_optionSV.get()
+        params["CSunk"] = self.csunkSV.get()
+        params["ncores"] = self.ncoresSV.get()
+        params["isodiff"] = self.isodiffSV.get()
+        params["ppmiso"] = self.ppmisoSV.get()
+        params["me"] = self.me
+        params["ratiosd"] = self.ratiosdSV.get()
+        params["mzdCS"] = self.mzdCSSV.get()
+        params["ppmCS"] = self.ppmCSSV.get()
+        params["evfilt"] = self.evfilt_optionSV.get()
+        params["ppmunk"] = self.ppmunkSV.get()
+        params["ratiounk"] = self.ratiounkSV.get()
+        params["ppmthr"] = self.ppmthrSV.get()
+        params["pRTNone"] = self.pRTNoneSV.get()
+        params["pRTout"] = self.pRToutSV.get()
+        params["connections"] = self.connections
+
+        return params
+
+
 
     def run_btn_clicked(self):
 

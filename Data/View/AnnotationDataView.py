@@ -30,10 +30,13 @@ class AnnotationDataView(BaseDataView):
 
         for item in self.datalist:
             if item.label not in exclude_labels:
-                self.dataframe = self.dataframe.append({
-                                                        "UID": item.uid,
-                                                        "Label": item.label,
-                                                        "Value": item.value,
-                                                        "Selected": item.selected,
-                                                        "Checked": item.checked,
-                                                    }, ignore_index=True)
+                dr = pd.DataFrame({"UID": item.uid, "Label": item.label, "Value": item.value, "Selected": item.selected, "Checked": item.checked}, index=[0])
+                self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)
+
+                # self.dataframe = self.dataframe.append({
+                #                                         "UID": item.uid,
+                #                                         "Label": item.label,
+                #                                         "Value": item.value,
+                #                                         "Selected": item.selected,
+                #                                         "Checked": item.checked,
+                #                                     }, ignore_index=True)

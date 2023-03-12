@@ -6,6 +6,7 @@ from Data.View.PlotFragmentationItem import PlotFragmentationItem
 from Data.PeakML.Peak import Peak
 from Data.PeakML.Header import Header
 from Data.PeakML.PeakData import PeakData
+import pandas as pd
 
 from typing import List
 
@@ -35,11 +36,13 @@ class PlotFragmentationDataView(BaseDataView):
     def refresh_dataframe(self):
         self.clear_dataframe()
         for item in self.datalist:
-            self.dataframe = self.dataframe.append({
-                                                    "UID": item.uid,
-                                                    "Label": item.label,
-                                                    "Fragments" : item.fragments,
-                                                    #"Colour": item.colour,
-                                                    "Selected": item.selected,
-                                                    "Checked": item.checked,
-                                                }, ignore_index=True)
+            dr = pd.DataFrame({
+                                "UID": item.uid,
+                                "Label": item.label,
+                                "Fragments" : item.fragments,
+                                #"Colour": item.colour,
+                                "Selected": item.selected,
+                                "Checked": item.checked,
+                            }, index=[0])
+            self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)
+

@@ -6,6 +6,7 @@ from Data.View.BaseDataView import BaseDataView
 from Data.View.PlotIntensityItem import PlotIntensityItem
 from Data.PeakML.Peak import Peak
 from Data.PeakML.Header import Header
+import pandas as pd
 
 class PlotIntensityDataView(BaseDataView):
     def __init__(self):
@@ -41,14 +42,15 @@ class PlotIntensityDataView(BaseDataView):
     def refresh_dataframe(self):
         self.clear_dataframe()
         for item in self.datalist:
-            self.dataframe = self.dataframe.append({
-                                                    "UID": item.uid,
-                                                    "SetID": item.set_id,
-                                                    "SetID_Label": item.set_id_label,
-                                                    "Intensity": item.intensity,
-                                                    "Intensities_Mean": item.intensities_mean,
-                                                    "Intensities_Neg_Conf": item.intensities_neg_conf,
-                                                    "Intensities_Pos_Conf": item.intensities_pos_conf,
-                                                    "Selected": item.selected,
-                                                    "Checked": item.checked,
-                                                }, ignore_index=True)
+            dr = pd.DataFrame({
+                                "UID": item.uid,
+                                "SetID": item.set_id,
+                                "SetID_Label": item.set_id_label,
+                                "Intensity": item.intensity,
+                                "Intensities_Mean": item.intensities_mean,
+                                "Intensities_Neg_Conf": item.intensities_neg_conf,
+                                "Intensities_Pos_Conf": item.intensities_pos_conf,
+                                "Selected": item.selected,
+                                "Checked": item.checked,
+                            }, index=[0])
+            self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)

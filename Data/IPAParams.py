@@ -45,30 +45,39 @@ class IPAParams:
                "C18H30O15"]
 
     @property
-    def ionisation(self) -> int:
+    def ionisation(self) -> float:
         return self._ionisation
 
     @ionisation.setter
-    def ionisation(self, ionisation: int):
-        self._ionisation = ionisation
+    def ionisation(self, ionisation: float):
+        if ionisation is None:
+            self._ionisation = None
+        else:
+            self._ionisation = float(ionisation)
 
     # Accuracy of the MS instrument used
     @property
-    def ppm(self) -> int:
+    def ppm(self) -> float:
         return self._ppm
 
     @ppm.setter
-    def ppm(self, ppm: int):
-        self._ppm = ppm
+    def ppm(self, ppm: float):
+        if ppm is None:
+            self._ppm = None
+        else:
+            self._ppm = float(ppm)
 
     # number of iterations if the Gibbs sampler to be run
     @property
-    def noits(self) -> int:
+    def noits(self) -> float:
         return self._noits
 
     @noits.setter
-    def noits(self, noits: int):
-        self._noits = noits
+    def noits(self, noits: float):
+        if noits is None:
+            self._noits = None
+        else:
+            self._noits = float(noits)
 
     # number of iterations to be ignored when computing posterior
     # probabilities. If None, is set to 10% of total iterations
@@ -78,31 +87,41 @@ class IPAParams:
 
     @burn.setter
     def burn(self, burn: int):
-        self._burn = burn
+        if burn is None:
+            self._burn = None
+        else:
+            self._burn = int(burn)
 
     # parameter used when computing the conditional priors. The
     # parameter must be positive. The smaller the parameter the more
     # weight the adducts connections have on the posterior
     # probabilities. Default 1.
     @property
-    def delta_add(self) -> int:
+    def delta_add(self) -> float:
         return self._delta_add
 
     @delta_add.setter
-    def delta_add(self, delta_add: int):
+    def delta_add(self, delta_add: float):
         self._delta_add = delta_add
+        if delta_add is None:
+            self._delta_add = 1
+        else:
+            self._delta_add = float(delta_add)
 
     # parameter used when computing the conditional priors.
     # The parameter must be positive. The smaller the parameter the
     #more weight the adducts connections have on the posterior
     # probabilities. Default 1.
     @property
-    def delta_bio(self) -> int:
+    def delta_bio(self) -> float:
         return self._delta_bio
 
     @delta_bio.setter
-    def delta_bio(self, delta_bio: int):
-        self._delta_bio = delta_bio
+    def delta_bio(self, delta_bio: float):
+        if delta_bio is None:
+            self._delta_bio = 1
+        else:
+            self._delta_bio = float(delta_bio)
 
     # either 'reactions' (connections are computed based on the reactions
     # present in the database) or 'connections' (connections are computed
@@ -123,36 +142,48 @@ class IPAParams:
 
     @CSunk.setter
     def CSunk(self, CSunk: float):
-        self._CSunk = CSunk
+        if CSunk is None:
+            self._CSunk = None
+        else:
+            self._CSunk = float(CSunk)
 
     # Default value 1. Difference between isotopes of charge 1, does not
     # need to be exact
     @property
-    def isodiff(self) -> int:
+    def isodiff(self) -> float:
         return self._isodiff
 
     @isodiff.setter
-    def isodiff(self, isodiff: int):
-        self._isodiff = isodiff
+    def isodiff(self, isodiff: float):
+        if isodiff is None:
+            self._isodiff = None
+        else:
+            self._isodiff = float(isodiff)
 
     # Default value 100. Maximum ppm value allowed between 2 isotopes.
     # It is very high on purpose
     @property
-    def ppmiso(self) -> int:
+    def ppmiso(self) -> float:
         return self._ppmiso
 
     @ppmiso.setter
-    def ppmiso(self, ppmiso: int):
-        self._ppmiso = ppmiso
+    def ppmiso(self, ppmiso: float):
+        if ppmiso is None:
+            self._ppmiso = None
+        else:
+            self._ppmiso = float(ppmiso)
 
     # default value 1. Number of cores used
     @property
-    def ncores(self) -> int:
+    def ncores(self) -> float:
         return self._ncores
 
     @ncores.setter
-    def ncores(self, ncores: int):
-        self._ncores = ncores
+    def ncores(self, ncores: float):
+        if ncores is None:
+            self._ncores = None
+        else:
+            self._ncores = float(ncores)
 
     # accurate mass of the electron. Default 5.48579909065e-04
     @property
@@ -161,10 +192,13 @@ class IPAParams:
 
     @me.setter
     def me(self, me: float):
-        self._me = me
+        if me is None:
+            self._me = None
+        else:
+            self._me = float(me)
 
     # default 0.9. It represents the acceptable ratio between predicted
-    # intensity and observed intensity of isotopes. it is used to compute
+    # floatensity and observed floatensity of isotopes. it is used to compute
     # the shape parameters of the lognormal distribution used to
     # calculate the isotope pattern scores as sqrt(1/ratiosd)
     @property
@@ -173,17 +207,23 @@ class IPAParams:
 
     @ratiosd.setter
     def ratiosd(self, ratiosd: float):
-        self._ratiosd = ratiosd
+        if ratiosd is None:
+            self._ratiosd = None
+        else:
+            self._ratiosd = float(ratiosd)
 
     # ppm associated to the 'unknown' annotation. If not provided equal
     # to ppm.
     @property
-    def ppmunk(self) -> int:
+    def ppmunk(self) -> float:
         return self._ppmunk
 
     @ppmunk.setter
-    def ppmunk(self, ppmunk: int):
-        self._ppmunk = ppmunk
+    def ppmunk(self, ppmunk: float):
+        if ppmunk is None:
+            self._ppmunk = None
+        else:
+            self._ppmunk = float(ppmunk)
 
     # isotope ratio associated to the 'unknown' annotation. If not
     # provided equal to 0.5
@@ -193,7 +233,10 @@ class IPAParams:
 
     @ratiounk.setter
     def ratiounk(self, ratiounk: float):
-        self._ratiounk = ratiounk
+        if ratiounk is None:
+            self._ratiounk = None
+        else:
+            self._ratiounk = float(ratiounk)
 
     # Maximum ppm possible for the annotations. Ff not provided equal to
     # 2*ppm
@@ -203,7 +246,10 @@ class IPAParams:
 
     @ppmthr.setter
     def ppmthr(self, ppmthr: float):
-        self._ppmthr = ppmthr
+        if ppmthr is None:
+            self._ppmthr = None
+        else:
+            self._ppmthr = float(ppmthr)
 
     # Multiplicative factor for the RT if no RTrange present in the
     # database. If not provided equal to 0.8
@@ -213,7 +259,10 @@ class IPAParams:
 
     @pRTNone.setter
     def pRTNone(self, pRTNone: float):
-        self._pRTNone = pRTNone
+        if pRTNone is None:
+            self._pRTNone = None
+        else:
+            self._pRTNone = float(pRTNone)
 
     # Multiplicative factor for the RT if measured RT is outside the
     # RTrange present in the database. If not provided equal to 0.4
@@ -223,29 +272,38 @@ class IPAParams:
 
     @pRTout.setter
     def pRTout(self, pRTout: float):
-        self._pRTout = pRTout
+        if pRTout is None:
+            self._pRTout = None
+        else:
+            self._pRTout = float(pRTout)
 
     # Maximum mz difference allowed when computing cosine similarity
     # scores. If one wants to use this parameter instead of ppmCS, this
     # must be set to 0. Default 0.
     @property
-    def mzdCS(self) -> int:
+    def mzdCS(self) -> float:
         return self._mzdCS
 
     @mzdCS.setter
-    def mzdCS(self, mzdCS: int):
-        self._mzdCS = mzdCS
+    def mzdCS(self, mzdCS: float):
+        if mzdCS is None:
+            self._mzdCS = None
+        else:
+            self._mzdCS = float(mzdCS)
 
     # Maximum ppm allowed when computing cosine similarity scores.
     # If one wants to use this parameter instead of mzdCS, this must be
     # set to 0. Default 10.
     @property
-    def ppmCS(self) -> int:
+    def ppmCS(self) -> float:
         return self._ppmCS
 
     @ppmCS.setter
-    def ppmCS(self, ppmCS: int):
-        self._ppmCS = ppmCS
+    def ppmCS(self, ppmCS: float):
+        if ppmCS is None:
+            self._ppmCS = None
+        else:
+            self._ppmCS = float(ppmCS)
 
     #evfilt: Default value False. If true, only spectra acquired with the same
     # collision energy are considered.

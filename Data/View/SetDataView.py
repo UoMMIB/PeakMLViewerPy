@@ -5,6 +5,7 @@ from Data.View.SetItem import SetItem
 from Data.PeakML.Header import Header
 
 from typing import List
+import pandas as pd
 
 class SetDataView(BaseDataView):
     def __init__(self):
@@ -46,14 +47,16 @@ class SetDataView(BaseDataView):
     def refresh_dataframe(self):
         self.clear_dataframe()
         for item in self.datalist:
-            self.dataframe = self.dataframe.append({
-                                                    "UID": item.uid,
-                                                    "Name": item.name,
-                                                    "Color": item.color,
-                                                    "Parent": item.parent,
-                                                    "Selected": item.selected,
-                                                    "Checked": item.checked,
-                                                }, ignore_index=True)
+            dr = pd.DataFrame({
+                                "UID": item.uid,
+                                "Name": item.name,
+                                "Color": item.color,
+                                "Parent": item.parent,
+                                "Selected": item.selected,
+                                "Checked": item.checked,
+                    }, index=[0])
+            self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)
+                            
 
     def get_checked_status_from_label(self, label: str) -> bool:
         return self.dataframe.loc[self.dataframe["Name"] == label,"Checked"].values[0]

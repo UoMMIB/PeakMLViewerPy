@@ -3,6 +3,7 @@ import Utilities as u
 from Data.View.BaseDataView import BaseDataView
 from Data.View.PlotDerivativesItem import PlotDerivativesItem
 from Data.PeakML.Peak import Peak
+import pandas as pd
 
 from typing import Dict
 
@@ -62,14 +63,15 @@ class PlotDerivativesDataView(BaseDataView):
     def refresh_dataframe(self):
         self.clear_dataframe()
         for item in self.datalist:
-            self.dataframe = self.dataframe.append({
-                                                    "UID": item.uid,
-                                                    "Mass": item.mass,
-                                                    "Intensity": item.intensity,
-                                                    "Description": item.description,
-                                                    "Selected": item.selected,
-                                                    "Checked": item.checked,
-                                                }, ignore_index=True)
+            dr = pd.DataFrame({
+                                "UID": item.uid,
+                                "Mass": item.mass,
+                                "Intensity": item.intensity,
+                                "Description": item.description,
+                                "Selected": item.selected,
+                                "Checked": item.checked,
+                            }, index=[0])
+            self.dataframe = pd.concat([self.dataframe, dr], ignore_index=True)
 
 
 

@@ -10,6 +10,9 @@ import gzip
 
 from xml.dom import minidom
 
+import os
+import pandas as pd
+
 from typing import Dict, List
 
 class PeakML():
@@ -119,14 +122,53 @@ class PeakML():
         
         return success
 
+    # IPA methods
+
+    def ipa_load_databases(self):
+        return IPAV2IO.load_databases()
+
+    def ipa_cluster_features(self, peakml_df):
+        return IPAV2IO.cluster_features(peakml_df)
+
+    def ipa_map_isotope_patterns(self, peakml_df, params):
+        IPAV2IO.map_isotope_patterns(peakml_df, params)
+        return peakml_df, params
+
+    def ipa_run_adducts(self, params, ms1_db, adducts_db):
+        return IPAV2IO.run_adducts(params, ms1_db, adducts_db)
+
+    def ipa_run_priors(self, peakml_df, params, computed_adducts, ms2_db, dbms2_db):
+        return IPAV2IO.run_priors(peakml_df, params, computed_adducts, ms2_db, dbms2_db)
+
+    def ipa_run_bio_matrix(self, annotation_priors, params, ms1_db, allbioreactions_db):
+        return IPAV2IO.run_bio_matrix(annotation_priors, params, ms1_db, allbioreactions_db)
+
+    def ipa_run_gibbs_sampler(self, peakml_df, params, annotation_priors, bio_matrix):
+        IPAV2IO.run_gibbs_sampler(peakml_df, params, annotation_priors, bio_matrix)
+        return annotation_priors
+
+    def ipa_generate_input(self):
+        return IPAV2IO.generate_ipa_input(list(self.peaks.values()))
+
+    def ipa_update_peak_with_annotations(self, anno):
+        return IPAV2IO.update_peak_with_annotations(self.peaks, anno)
+
     def generate_ipa_annotations(self, ipa_params) -> bool:
 
         success = False
 
         try:
-            lg.log_error("Start IPA generate")
-            IPAV2IO.generate_ipa_annotation(self.peaks, ipa_params)
-            lg.log_error("End IPA generate")
+            #lg.log_error("Start IPA generate")
+            #IPAV2IO.generate_ipa_annotation(self.peaks, ipa_params)
+            #lg.log_error("End IPA generate")
+
+            lg.log_error("Generate IPA input")
+            peakml_df = IPAV2IO.generate_ipa_input(list(self.peaks.values()))
+            lg.log_error("Run IPA")
+            anno = IPAV2IO.run_ipa(peakml_df, ipa_params)
+
+            lg.log_error("Update peak with annotations")
+            IPAV2IO.update_peak_with_annotations(self.peaks, anno)
 
             return True
         except Exception as err:
