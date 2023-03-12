@@ -308,31 +308,50 @@ class SetIPAParamsDialog(ViewerDialog):
         params = {}
 
         # IPA Params
-        params["ionisation"] = self.ion_optionSV.get()
-        params["ppm"] = self.ppmSV.get()
-        params["noits"] = self.noitsSV.get()
-        params["burn"] = self.burnSV.get()
-        params["delta_add"] = self.deltaaddSV.get()
-        params["delta_bio"] = self.deltabioSV.get()
+        params["ionisation"] = self.to_int_json(self.ion_optionSV.get())
+        params["ppm"] = self.to_int_json(self.ppmSV.get())
+        params["noits"] = self.to_int_json(self.noitsSV.get())
+        params["burn"] = self.to_int_json(self.burnSV.get())
+        params["delta_add"] = self.to_int_json(self.deltaaddSV.get())
+        params["delta_bio"] = self.to_int_json(self.deltabioSV.get())
         params["mode"] = self.mode_optionSV.get()
-        params["CSunk"] = self.csunkSV.get()
-        params["ncores"] = self.ncoresSV.get()
-        params["isodiff"] = self.isodiffSV.get()
-        params["ppmiso"] = self.ppmisoSV.get()
-        params["me"] = self.me
-        params["ratiosd"] = self.ratiosdSV.get()
-        params["mzdCS"] = self.mzdCSSV.get()
-        params["ppmCS"] = self.ppmCSSV.get()
-        params["evfilt"] = self.evfilt_optionSV.get()
-        params["ppmunk"] = self.ppmunkSV.get()
-        params["ratiounk"] = self.ratiounkSV.get()
-        params["ppmthr"] = self.ppmthrSV.get()
-        params["pRTNone"] = self.pRTNoneSV.get()
-        params["pRTout"] = self.pRToutSV.get()
+        params["CSunk"] = self.to_float_json(self.csunkSV.get())
+        params["ncores"] = self.to_int_json(self.ncoresSV.get())
+        params["isodiff"] = self.to_int_json(self.isodiffSV.get())
+        params["ppmiso"] = self.to_int_json(self.ppmisoSV.get())
+        params["me"] = self.to_float_json(self.me)
+        params["ratiosd"] = self.to_float_json(self.ratiosdSV.get())
+        params["mzdCS"] = self.to_float_json(self.mzdCSSV.get())
+        params["ppmCS"] = self.to_float_json(self.ppmCSSV.get())
+        params["evfilt"] = self.to_int_json(self.evfilt_optionSV.get())
+        params["ppmunk"] = self.to_float_json(self.ppmunkSV.get(),True)
+        params["ratiounk"] = self.to_float_json(self.ratiounkSV.get(),True)
+        params["ppmthr"] = self.to_float_json(self.ppmthrSV.get(),True)
+        params["pRTNone"] = self.to_float_json(self.pRTNoneSV.get(),True)
+        params["pRTout"] = self.to_float_json(self.pRToutSV.get(),True)
         params["connections"] = self.connections
 
         return params
 
+    def to_int_json(self, input_string, null_if_zero=False):
+        try:
+            input_int = int(input_string)
+            if null_if_zero and not input_int:
+                return None
+            else:
+                return input_int
+        except:
+            return None
+
+    def to_float_json(self, input_string, null_if_zero=False):
+        try:
+            input_float = float(input_string)
+            if null_if_zero and not input_float:
+                return None
+            else:
+                return input_float
+        except:
+            return None
 
 
     def run_btn_clicked(self):

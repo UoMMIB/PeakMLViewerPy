@@ -45,15 +45,15 @@ class IPAParams:
                "C18H30O15"]
 
     @property
-    def ionisation(self) -> float:
+    def ionisation(self) -> int:
         return self._ionisation
 
     @ionisation.setter
-    def ionisation(self, ionisation: float):
+    def ionisation(self, ionisation: int):
         if ionisation is None:
             self._ionisation = None
         else:
-            self._ionisation = float(ionisation)
+            self._ionisation = int(ionisation)
 
     # Accuracy of the MS instrument used
     @property
